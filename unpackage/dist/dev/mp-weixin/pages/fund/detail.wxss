@@ -1,0 +1,241 @@
+/**
+ * 这里是uni-app内置的常用样式变量
+ *
+ * uni-app 官方扩展插件及插件市场（https://ext.dcloud.net.cn）上很多三方插件均使用了这些样式变量
+ * 如果你是插件开发者，建议你使用scss预处理，并在插件代码中直接使用这些变量（无需 import 这个文件），方便用户通过搭积木的方式开发整体风格一致的App
+ *
+ */
+/**
+ * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能
+ *
+ * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
+ */
+/* 颜色变量 */
+/* 行为相关颜色 */
+/* 文字基本颜色 */
+/* 背景颜色 */
+/* 边框颜色 */
+/* 尺寸变量 */
+/* 文字尺寸 */
+/* 图片尺寸 */
+/* Border Radius */
+/* 水平间距 */
+/* 垂直间距 */
+/* 透明度 */
+/* 文章场景相关 */
+/* 自定义金融相关颜色 */
+/* 涨 - 红 */
+/* 跌 - 绿 */
+/* 平 - 灰 */
+/* 自定义卡片样式 */
+.fund-detail-container {
+  padding: 20rpx;
+  padding-bottom: 120rpx;
+  background-color: #f5f7fa;
+  min-height: 100vh;
+}
+
+/* Header Card */
+.fund-header-card {
+  background: linear-gradient(135deg, #ffffff, #f9faff);
+  border-radius: 12px;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #eef0f5;
+}
+.fund-header-card .fund-title-row {
+  margin-bottom: 30rpx;
+}
+.fund-header-card .fund-title-row .fund-name {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333333;
+  display: block;
+  margin-bottom: 6rpx;
+}
+.fund-header-card .fund-title-row .fund-code {
+  font-size: 26rpx;
+  color: #999999;
+  background-color: #f0f2f5;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+}
+.fund-header-card .main-metrics {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.fund-header-card .main-metrics .metric-main {
+  display: flex;
+  flex-direction: column;
+}
+.fund-header-card .main-metrics .metric-main .value {
+  font-size: 60rpx;
+  font-weight: bold;
+  line-height: 1.1;
+  font-family: "DIN Alternate", "Roboto", sans-serif;
+}
+.fund-header-card .main-metrics .metric-main .label {
+  font-size: 24rpx;
+  color: #999999;
+  margin-top: 6rpx;
+}
+.fund-header-card .main-metrics .metric-sub {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.fund-header-card .main-metrics .metric-sub .value {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 6rpx;
+}
+.fund-header-card .main-metrics .metric-sub .label {
+  font-size: 22rpx;
+  color: #999999;
+}
+
+/* Common Card Style */
+.detail-card, .chart-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.detail-card .card-title, .chart-card .card-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2C405A;
+  margin-bottom: 24rpx;
+  padding-left: 16rpx;
+  border-left: 6rpx solid #2979ff;
+  line-height: 1;
+}
+
+/* Detail Grid */
+.data-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+.data-grid .data-item {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24rpx;
+}
+.data-grid .data-item .label {
+  font-size: 24rpx;
+  color: #999999;
+  margin-bottom: 8rpx;
+}
+.data-grid .data-item .value {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 500;
+}
+.holding-profit {
+  margin-top: 10rpx;
+}
+.holding-profit .divider {
+  height: 1rpx;
+  background-color: #eee;
+  margin-bottom: 24rpx;
+}
+.holding-profit .profit-row {
+  display: flex;
+  justify-content: space-between;
+  background-color: #f9faff;
+  padding: 20rpx;
+  border-radius: 8rpx;
+}
+.holding-profit .profit-row .profit-item {
+  display: flex;
+  flex-direction: column;
+}
+.holding-profit .profit-row .profit-item:last-child {
+  align-items: flex-end;
+}
+.holding-profit .profit-row .profit-item .label {
+  font-size: 22rpx;
+  color: #999999;
+  margin-bottom: 6rpx;
+}
+.holding-profit .profit-row .profit-item .value {
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.holding-profit .profit-row .profit-item .profit-values {
+  display: flex;
+  align-items: baseline;
+}
+.holding-profit .profit-row .profit-item .profit-values .value {
+  margin-right: 10rpx;
+}
+.holding-profit .profit-row .profit-item .profit-values .rate {
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+/* Chart Placeholder */
+.chart-container {
+  height: 400rpx;
+  background-color: #f9f9f9;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chart-container .chart-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0.5;
+}
+.chart-container .chart-placeholder .icon {
+  font-size: 60rpx;
+  margin-bottom: 20rpx;
+}
+.chart-container .chart-placeholder .text {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+/* Bottom Actions */
+.bottom-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20rpx 30rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background-color: #fff;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  z-index: 100;
+}
+.bottom-actions .action-btn {
+  flex: 1;
+  margin: 0 15rpx;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border: none;
+}
+.bottom-actions .action-btn::after {
+  border: none;
+}
+.bottom-actions .action-btn.edit {
+  background-color: #2979ff;
+  color: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(41, 121, 255, 0.3);
+}
+.bottom-actions .action-btn.delete {
+  background-color: #fff;
+  color: #dd524d;
+  border: 2rpx solid #ffebeb;
+}
