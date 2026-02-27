@@ -53,7 +53,7 @@
 				<view class="profit-row">
 					<view class="profit-item">
 						<text class="label">持有金额</text>
-						<text class="value">{{ (fundDetail.num * (fundDetail.dwjz || fundDetail.gsz || 0)).toFixed(2) }}</text>
+						<text class="value">{{ (fundDetail.num * (fundDetail.jzrq === new Date().toISOString().slice(0, 10) ? (parseFloat(fundDetail.dwjz) || 0) : (parseFloat(fundDetail.gsz) || parseFloat(fundDetail.dwjz) || 0))).toFixed(2) }}</text>
 					</view>
 					<view class="profit-item">
 						<text class="label">持有收益</text>
@@ -166,16 +166,39 @@ export default {
 		},
 		calculateProfit() {
 			if (!this.fundDetail.num || !this.fundDetail.cost) return 0;
-			// 优先使用单位净值，如果没有则使用估算净值
-			const currentPrice = parseFloat(this.fundDetail.dwjz) || parseFloat(this.fundDetail.gsz) || 0;
+			
+			// 逻辑修改：
+			// 判断净值是否已更新为今日
+			const todayStr = new Date().toISOString().slice(0, 10);
+			const isUpdated = this.fundDetail.jzrq === todayStr;
+			
+			// 确定计算用的当前净值 (Current NAV)
+			// 如果净值已更新为今日，则使用 dwjz；否则优先使用 gsz（盘中估值），如果没有 gsz 则回退到 dwjz
+			let currentPrice = 0;
+			if (isUpdated) {
+				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
+			} else {
+				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
+			}
+			
 			if (currentPrice === 0) return 0;
 			
 			return (currentPrice - parseFloat(this.fundDetail.cost)) * parseFloat(this.fundDetail.num);
 		},
 		calculateProfitRate() {
 			if (!this.fundDetail.num || !this.fundDetail.cost) return '0.00';
-			// 优先使用单位净值，如果没有则使用估算净值
-			const currentPrice = parseFloat(this.fundDetail.dwjz) || parseFloat(this.fundDetail.gsz) || 0;
+			
+			// 逻辑修改：同上
+			const todayStr = new Date().toISOString().slice(0, 10);
+			const isUpdated = this.fundDetail.jzrq === todayStr;
+			
+			let currentPrice = 0;
+			if (isUpdated) {
+				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
+			} else {
+				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
+			}
+			
 			const cost = parseFloat(this.fundDetail.cost);
 			if (currentPrice === 0 || cost === 0) return '0.00';
 			

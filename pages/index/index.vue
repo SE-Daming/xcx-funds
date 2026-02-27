@@ -283,25 +283,69 @@ export default {
 						
 						// 计算收益
 						if (localFund.num > 0) {
-							// 持有金额 = 份额 * 单位净值 (优先使用单位净值，因为是确认的资产)
-							// 如果没有单位净值，才使用估算净值
-							const nav = parseFloat(apiFund.dwjz || apiFund.gsz || 0);
-							const amount = localFund.num * nav;
+							// 净值处理逻辑：
+							// 1. 判断是否是交易日当天（简单判断：如果估值时间是今天）
+							// 2. 如果单位净值的日期也是今天，说明今天已经收盘更新了净值，那么直接用单位净值计算今日收益（此时今日收益其实是0，因为单位净值已经是最终结果）
+							//    或者说，今日收益 = (今日单位净值 - 昨日单位净值) * 份额。但我们这里没有昨日净值数据。
+							//    通常API返回的 dwjz 是最近一个交易日的净值。
+							
+							// 修改后的逻辑：
+							// 如果当前时间是交易日晚上（比如20:00后），且 dwjz 的日期是今天，说明净值已更新。
+							// 此时，gsz (估算净值) 可能已经失效或不再准确，应优先使用 dwjz。
+							// 但为了简化逻辑，我们主要关注“计算基准”。
+							
+							// 基础数据获取
+							const dwjz = parseFloat(apiFund.dwjz || 0);
+							const gsz = parseFloat(apiFund.gsz || 0);
+							const gszzl = parseFloat(apiFund.gszzl || 0);
+							
+							// 判断净值是否已更新为今日
+							// 这里假设 apiFund.jzrq 是 "2023-05-20" 格式
+							const todayStr = new Date().toISOString().slice(0, 10);
+							const isUpdated = apiFund.jzrq === todayStr;
+							
+							// 确定计算用的当前净值 (Current NAV)
+							// 如果净值已更新为今日，则使用 dwjz；否则优先使用 gsz（盘中估值），如果没有 gsz 则回退到 dwjz
+							let currentNav = 0;
+							if (isUpdated) {
+								currentNav = dwjz;
+							} else {
+								currentNav = gsz || dwjz || 0;
+							}
+							
+							// 持有金额 = 份额 * 当前净值
+							const amount = localFund.num * currentNav;
 							updatedFund.amount = amount;
 							totalAmount += amount;
 							
-							// 今日收益 = 份额 * 单位净值 * 估算涨跌幅 / 100
-							// 或者 (估算净值 - 昨日净值) * 份额
-							// 这里使用：持有金额(基于昨日净值) * 估算涨跌幅%
-							const gains = amount * parseFloat(apiFund.gszzl || 0) / 100;
+							// 今日收益计算
+							let gains = 0;
+							if (isUpdated) {
+								// 如果净值已更新，今日收益 = (今日净值 - 昨日净值) * 份额
+								// 昨日净值 = 今日净值 / (1 + 涨跌幅/100)
+								// 注意：apiFund.gszzl 在净值更新后通常会变成 实际涨跌幅
+								// 但有时 apiFund.gszzl 还是估算涨跌幅，需要小心。
+								// 无论如何，我们尝试还原昨日净值来计算精确收益
+								const lastNav = currentNav / (1 + gszzl / 100);
+								gains = (currentNav - lastNav) * localFund.num;
+							} else {
+								// 盘中估算：持有金额(基于昨日净值) * 估算涨跌幅%
+								// 近似计算：当前持有金额 * 估算涨跌幅% / (1 + 估算涨跌幅%) 
+								// 或者简单点：份额 * (当前估算净值 - 昨日净值)
+								// 昨日净值 ≈ dwjz (如果还没更新的话)
+								if (dwjz > 0) {
+									gains = (currentNav - dwjz) * localFund.num;
+								} else {
+									gains = amount * gszzl / 100;
+								}
+							}
+							
 							updatedFund.gains = gains;
 							todayGains += gains;
 							
 							// 持有收益 = (当前净值 - 持仓成本) * 份额
-							// 为了保持一致性，这里的"当前净值"也使用单位净值(dwjz)
-							// 如果想要包含今日浮动盈亏，应该加上 todayGains，但通常持有收益指截止昨日的确认收益
 							if (localFund.cost > 0) {
-								const costGains = (nav - localFund.cost) * localFund.num;
+								const costGains = (currentNav - localFund.cost) * localFund.num;
 								updatedFund.costGains = costGains;
 								holdGains += costGains;
 								

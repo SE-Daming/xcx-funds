@@ -119,15 +119,35 @@ const _sfc_main = {
               // 估值时间
             };
             if (localFund.num > 0) {
-              const nav = parseFloat(apiFund.dwjz || apiFund.gsz || 0);
-              const amount = localFund.num * nav;
+              const dwjz = parseFloat(apiFund.dwjz || 0);
+              const gsz = parseFloat(apiFund.gsz || 0);
+              const gszzl = parseFloat(apiFund.gszzl || 0);
+              const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+              const isUpdated = apiFund.jzrq === todayStr;
+              let currentNav = 0;
+              if (isUpdated) {
+                currentNav = dwjz;
+              } else {
+                currentNav = gsz || dwjz || 0;
+              }
+              const amount = localFund.num * currentNav;
               updatedFund.amount = amount;
               totalAmount += amount;
-              const gains = amount * parseFloat(apiFund.gszzl || 0) / 100;
+              let gains = 0;
+              if (isUpdated) {
+                const lastNav = currentNav / (1 + gszzl / 100);
+                gains = (currentNav - lastNav) * localFund.num;
+              } else {
+                if (dwjz > 0) {
+                  gains = (currentNav - dwjz) * localFund.num;
+                } else {
+                  gains = amount * gszzl / 100;
+                }
+              }
               updatedFund.gains = gains;
               todayGains += gains;
               if (localFund.cost > 0) {
-                const costGains = (nav - localFund.cost) * localFund.num;
+                const costGains = (currentNav - localFund.cost) * localFund.num;
                 updatedFund.costGains = costGains;
                 holdGains += costGains;
                 const fundTotalCost = localFund.cost * localFund.num;
@@ -147,7 +167,7 @@ const _sfc_main = {
         this.totalAmount = totalAmount;
         utils_dataManager.DataManager.saveFundList(this.fundList);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/index/index.vue:331", "获取基金数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/index/index.vue:375", "获取基金数据失败:", error);
         common_vendor.index.showToast({
           title: "刷新失败",
           icon: "none"

@@ -54,6 +54,19 @@ export function getFundData(fundCodes, deviceId = '') {
           
           await Promise.all(promises);
           
+          const todayStr = new Date().toISOString().slice(0, 10);
+          for (let i = 0; i < fundList.length; i++) {
+            const f = fundList[i];
+            if (f && f.jzrq && f.jzrq === todayStr) {
+              if (typeof f.dwjz === 'number' && !isNaN(f.dwjz)) {
+                f.gsz = f.dwjz;
+              }
+              if (typeof f.navchg === 'number' && !isNaN(f.navchg)) {
+                f.gszzl = f.navchg;
+              }
+            }
+          }
+          
           resolve({ Datas: fundList });
         } else {
           console.error('基金数据获取失败:', res);
