@@ -17,7 +17,8 @@ const _sfc_main = {
       totalHoldGains: 0,
       totalCost: 0,
       totalAmount: 0,
-      deviceId: ""
+      deviceId: "",
+      lastUpdateDisplay: ""
     };
   },
   onLoad() {
@@ -97,6 +98,7 @@ const _sfc_main = {
         const fundCodes = this.fundList.map((fund) => fund.code);
         const result = await utils_fundApi.getFundData(fundCodes, this.deviceId);
         const apiData = result.Datas || [];
+        this.lastUpdateDisplay = this.computeLastUpdateDisplay(apiData);
         let todayGains = 0;
         let holdGains = 0;
         let totalCost = 0;
@@ -124,11 +126,15 @@ const _sfc_main = {
               const gszzl = parseFloat(apiFund.gszzl || 0);
               const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
               const isUpdated = apiFund.jzrq === todayStr;
+              const day = (/* @__PURE__ */ new Date()).getDay();
+              const isWeekend = day === 0 || day === 6;
               let currentNav = 0;
               if (isUpdated) {
                 currentNav = dwjz;
-              } else {
+              } else if (!isWeekend) {
                 currentNav = gsz || dwjz || 0;
+              } else {
+                currentNav = dwjz || 0;
               }
               const amount = localFund.num * currentNav;
               updatedFund.amount = amount;
@@ -137,12 +143,14 @@ const _sfc_main = {
               if (isUpdated) {
                 const lastNav = currentNav / (1 + gszzl / 100);
                 gains = (currentNav - lastNav) * localFund.num;
-              } else {
+              } else if (!isWeekend) {
                 if (dwjz > 0) {
                   gains = (currentNav - dwjz) * localFund.num;
                 } else {
                   gains = amount * gszzl / 100;
                 }
+              } else {
+                gains = 0;
               }
               updatedFund.gains = gains;
               todayGains += gains;
@@ -167,12 +175,56 @@ const _sfc_main = {
         this.totalAmount = totalAmount;
         utils_dataManager.DataManager.saveFundList(this.fundList);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/index/index.vue:375", "获取基金数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/index/index.vue:385", "获取基金数据失败:", error);
         common_vendor.index.showToast({
           title: "刷新失败",
           icon: "none"
         });
       }
+    },
+    computeLastUpdateDisplay(apiData) {
+      if (!apiData || apiData.length === 0)
+        return "";
+      const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      const hasTodayNAV = apiData.some((f) => f.jzrq === todayStr);
+      const toTs = (t) => {
+        if (!t)
+          return 0;
+        if (t.length > 10) {
+          const s = t.replace(/-/g, "/");
+          const d = new Date(s);
+          return isNaN(d.getTime()) ? 0 : d.getTime();
+        }
+        if (t.length === 5) {
+          const d = /* @__PURE__ */ new Date(`${todayStr} ${t}:00`);
+          return isNaN(d.getTime()) ? 0 : d.getTime();
+        }
+        return 0;
+      };
+      let maxTs = 0;
+      let maxStr = "";
+      apiData.forEach((f) => {
+        if (f.gztime) {
+          const ts = toTs(f.gztime);
+          if (ts > maxTs) {
+            maxTs = ts;
+            const d = new Date(ts);
+            const pad = (n) => n < 10 ? "0" + n : "" + n;
+            maxStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          }
+        }
+      });
+      if (hasTodayNAV) {
+        return `${todayStr} 净值`;
+      }
+      if (maxStr)
+        return maxStr;
+      let lastJz = "";
+      apiData.forEach((f) => {
+        if (f.jzrq && (!lastJz || f.jzrq > lastJz))
+          lastJz = f.jzrq;
+      });
+      return lastJz ? `${lastJz} 净值` : "";
     },
     refreshData() {
       common_vendor.index.showLoading({
@@ -237,35 +289,36 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return common_vendor.e({
     a: $data.showGains
   }, $data.showGains ? common_vendor.e({
-    b: common_vendor.o((...args) => $options.refreshData && $options.refreshData(...args)),
-    c: common_vendor.t($data.totalTodayGains > 0 ? "+" : ""),
-    d: common_vendor.t($data.totalTodayGains.toFixed(2)),
-    e: $data.totalTodayGains >= 0 ? 1 : "",
-    f: $data.totalTodayGains < 0 ? 1 : "",
-    g: common_vendor.t($data.totalHoldGains > 0 ? "+" : ""),
-    h: common_vendor.t($data.totalHoldGains.toFixed(2)),
-    i: $data.totalHoldGains >= 0 ? 1 : "",
-    j: $data.totalHoldGains < 0 ? 1 : "",
-    k: $data.totalCost > 0
+    b: common_vendor.t($data.lastUpdateDisplay || "--"),
+    c: common_vendor.o((...args) => $options.refreshData && $options.refreshData(...args)),
+    d: common_vendor.t($data.totalTodayGains > 0 ? "+" : ""),
+    e: common_vendor.t($data.totalTodayGains.toFixed(2)),
+    f: $data.totalTodayGains >= 0 ? 1 : "",
+    g: $data.totalTodayGains < 0 ? 1 : "",
+    h: common_vendor.t($data.totalHoldGains > 0 ? "+" : ""),
+    i: common_vendor.t($data.totalHoldGains.toFixed(2)),
+    j: $data.totalHoldGains >= 0 ? 1 : "",
+    k: $data.totalHoldGains < 0 ? 1 : "",
+    l: $data.totalCost > 0
   }, $data.totalCost > 0 ? {
-    l: common_vendor.t($data.totalHoldGains > 0 ? "+" : ""),
-    m: common_vendor.t(($data.totalHoldGains / $data.totalCost * 100).toFixed(2)),
-    n: $data.totalHoldGains >= 0 ? 1 : "",
-    o: $data.totalHoldGains < 0 ? 1 : ""
+    m: common_vendor.t($data.totalHoldGains > 0 ? "+" : ""),
+    n: common_vendor.t(($data.totalHoldGains / $data.totalCost * 100).toFixed(2)),
+    o: $data.totalHoldGains >= 0 ? 1 : "",
+    p: $data.totalHoldGains < 0 ? 1 : ""
   } : {}, {
-    p: common_vendor.t($data.totalAmount.toFixed(2))
+    q: common_vendor.t($data.totalAmount.toFixed(2))
   }) : {}, {
-    q: common_vendor.o((...args) => $options.goToAddFund && $options.goToAddFund(...args)),
-    r: common_vendor.o((...args) => $options.goToMarket && $options.goToMarket(...args)),
-    s: $data.isEditMode ? 1 : "",
-    t: common_vendor.t($data.isEditMode ? "完成" : "编辑"),
-    v: common_vendor.o((...args) => $options.toggleEditMode && $options.toggleEditMode(...args)),
-    w: common_vendor.o((...args) => $options.goToSettings && $options.goToSettings(...args)),
-    x: $data.fundList.length > 0
+    r: common_vendor.o((...args) => $options.goToAddFund && $options.goToAddFund(...args)),
+    s: common_vendor.o((...args) => $options.goToMarket && $options.goToMarket(...args)),
+    t: $data.isEditMode ? 1 : "",
+    v: common_vendor.t($data.isEditMode ? "完成" : "编辑"),
+    w: common_vendor.o((...args) => $options.toggleEditMode && $options.toggleEditMode(...args)),
+    x: common_vendor.o((...args) => $options.goToSettings && $options.goToSettings(...args)),
+    y: $data.fundList.length > 0
   }, $data.fundList.length > 0 ? {
-    y: common_vendor.t($data.fundList.length)
+    z: common_vendor.t($data.fundList.length)
   } : {}, {
-    z: common_vendor.f($data.fundList, (fund, index, i0) => {
+    A: common_vendor.f($data.fundList, (fund, index, i0) => {
       return common_vendor.e({
         a: common_vendor.t(fund.name),
         b: common_vendor.t(fund.code),
@@ -307,12 +360,12 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         x: common_vendor.o(($event) => $options.goToFundDetail(fund), fund.code)
       });
     }),
-    A: $data.showGSZ,
-    B: $data.showGains || $data.showCost || $data.showAmount,
-    C: $data.isEditMode,
-    D: $data.fundList.length === 0
+    B: $data.showGSZ,
+    C: $data.showGains || $data.showCost || $data.showAmount,
+    D: $data.isEditMode,
+    E: $data.fundList.length === 0
   }, $data.fundList.length === 0 ? {
-    E: common_vendor.o((...args) => $options.goToAddFund && $options.goToAddFund(...args))
+    F: common_vendor.o((...args) => $options.goToAddFund && $options.goToAddFund(...args))
   } : {});
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);

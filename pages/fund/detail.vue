@@ -158,27 +158,33 @@ export default {
 		},
 		formatTime(timeStr) {
 			if (!timeStr) return '--';
-			// 假设格式为 "2023-01-01 15:00" 或 "15:00"
+			const pad = (n) => (n < 10 ? '0' + n : '' + n);
 			if (timeStr.length > 10) {
-				return timeStr.substring(11, 16);
+				const s = timeStr.replace(/-/g, '/');
+				const d = new Date(s);
+				if (!isNaN(d.getTime())) {
+					return `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+				}
+				return timeStr.substring(5, 10);
 			}
-			return timeStr;
+			const t = new Date();
+			return `${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
 		},
 		calculateProfit() {
 			if (!this.fundDetail.num || !this.fundDetail.cost) return 0;
 			
-			// 逻辑修改：
-			// 判断净值是否已更新为今日
 			const todayStr = new Date().toISOString().slice(0, 10);
 			const isUpdated = this.fundDetail.jzrq === todayStr;
+			const day = new Date().getDay();
+			const isWeekend = day === 0 || day === 6;
 			
-			// 确定计算用的当前净值 (Current NAV)
-			// 如果净值已更新为今日，则使用 dwjz；否则优先使用 gsz（盘中估值），如果没有 gsz 则回退到 dwjz
 			let currentPrice = 0;
 			if (isUpdated) {
 				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
-			} else {
+			} else if (!isWeekend) {
 				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
+			} else {
+				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
 			}
 			
 			if (currentPrice === 0) return 0;
@@ -188,15 +194,18 @@ export default {
 		calculateProfitRate() {
 			if (!this.fundDetail.num || !this.fundDetail.cost) return '0.00';
 			
-			// 逻辑修改：同上
 			const todayStr = new Date().toISOString().slice(0, 10);
 			const isUpdated = this.fundDetail.jzrq === todayStr;
+			const day = new Date().getDay();
+			const isWeekend = day === 0 || day === 6;
 			
 			let currentPrice = 0;
 			if (isUpdated) {
 				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
-			} else {
+			} else if (!isWeekend) {
 				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
+			} else {
+				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
 			}
 			
 			const cost = parseFloat(this.fundDetail.cost);
@@ -361,12 +370,15 @@ export default {
 			display: flex;
 			flex-direction: column;
 			align-items: flex-end;
+			min-width: 180rpx;
 			
 			.value {
 				font-size: 32rpx;
 				font-weight: 500;
 				color: $uni-text-color;
 				margin-bottom: 6rpx;
+				font-family: 'DIN Alternate', 'Roboto', sans-serif;
+				text-align: right;
 			}
 			
 			.label {

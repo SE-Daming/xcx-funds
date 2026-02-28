@@ -66,21 +66,32 @@ const _sfc_main = {
     formatTime(timeStr) {
       if (!timeStr)
         return "--";
+      const pad = (n) => n < 10 ? "0" + n : "" + n;
       if (timeStr.length > 10) {
-        return timeStr.substring(11, 16);
+        const s = timeStr.replace(/-/g, "/");
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          return `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+        return timeStr.substring(5, 10);
       }
-      return timeStr;
+      const t = /* @__PURE__ */ new Date();
+      return `${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
     },
     calculateProfit() {
       if (!this.fundDetail.num || !this.fundDetail.cost)
         return 0;
       const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       const isUpdated = this.fundDetail.jzrq === todayStr;
+      const day = (/* @__PURE__ */ new Date()).getDay();
+      const isWeekend = day === 0 || day === 6;
       let currentPrice = 0;
       if (isUpdated) {
         currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
-      } else {
+      } else if (!isWeekend) {
         currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
+      } else {
+        currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
       }
       if (currentPrice === 0)
         return 0;
@@ -91,11 +102,15 @@ const _sfc_main = {
         return "0.00";
       const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       const isUpdated = this.fundDetail.jzrq === todayStr;
+      const day = (/* @__PURE__ */ new Date()).getDay();
+      const isWeekend = day === 0 || day === 6;
       let currentPrice = 0;
       if (isUpdated) {
         currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
-      } else {
+      } else if (!isWeekend) {
         currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
+      } else {
+        currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
       }
       const cost = parseFloat(this.fundDetail.cost);
       if (currentPrice === 0 || cost === 0)
@@ -133,7 +148,7 @@ const _sfc_main = {
           };
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/fund/detail.vue:247", "加载基金详情失败:", error);
+        common_vendor.index.__f__("error", "at pages/fund/detail.vue:256", "加载基金详情失败:", error);
       } finally {
       }
     },
@@ -146,7 +161,7 @@ const _sfc_main = {
           this.chartData = [];
         }
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/fund/detail.vue:262", "获取图表数据失败", e);
+        common_vendor.index.__f__("error", "at pages/fund/detail.vue:271", "获取图表数据失败", e);
         this.chartData = [];
       }
     },

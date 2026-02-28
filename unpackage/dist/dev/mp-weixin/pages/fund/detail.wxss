@@ -85,12 +85,15 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  min-width: 180rpx;
 }
 .fund-header-card .main-metrics .metric-sub .value {
   font-size: 32rpx;
   font-weight: 500;
   color: #333333;
   margin-bottom: 6rpx;
+  font-family: "DIN Alternate", "Roboto", sans-serif;
+  text-align: right;
 }
 .fund-header-card .main-metrics .metric-sub .label {
   font-size: 22rpx;

@@ -2,6 +2,7 @@
 2.要支持图片一键导入。（OCR引入）
 3.支持持久化，也就是用户关闭app后，再次打开app，数据不丢失。
 4.当日净值更新后，按照当日的净值来，就不按估算的净值了。
+5.接入黄金价格，周末看国际暗金
 
 接口汇总
 
@@ -62,3 +63,20 @@
 - 本地模拟返回：
   - 北向：hgt、sgt、total（单位：亿）
   - 南向：hgt、sgt、total（单位：亿）
+
+字段缩写对照表
+
+| 缩写/字段 | 含义           | 数据来源（原字段）                     | 说明 |
+| --- | --- | --- | --- |
+| fundcode | 基金代码 | FundMNFInfo.FCODE | 本地标准字段 |
+| name | 基金名称 | FundMNFInfo.SHORTNAME | 本地标准字段 |
+| jzrq | 净值日期 | FundMNFInfo.PDATE | 格式 yyyy-MM-dd |
+| dwjz | 单位净值 | FundMNFInfo.NAV | 当日净值更新后用于“实际值” |
+| gsz | 估算净值 | fundgz.gsz 或 FundMNFInfo.GSZ | 当日净值更新后覆盖为 dwjz |
+| gszzl | 估算涨跌幅(%) | fundgz.gszzl 或 FundMNFInfo.GSZZL | 当日净值更新后覆盖为 navchg |
+| gztime | 估值时间 | fundgz.gztime 或 FundMNFInfo.GZTIME | 可能为 HH:mm 或 yyyy-MM-dd HH:mm |
+| navchg | 当日实际涨跌幅(%) | FundMNFInfo.NAVCHGRT | 仅当日净值已更新时有效 |
+
+备注
+- 列表页“今日收益”在盘中且当日估值时间有效时使用 gsz 计算；休市或非当日不使用 gsz，收益置 0。
+- 当日净值更新后，gsz 与 gszzl 分别覆盖为 dwjz 与 navchg，以保证口径一致。

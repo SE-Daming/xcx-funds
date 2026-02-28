@@ -4,8 +4,13 @@
 		<view class="dashboard-card" v-if="showGains">
 			<view class="dashboard-header">
 				<text class="title">今日收益(元)</text>
-				<view class="refresh-icon" @click="refreshData">
-					<text class="icon">🔄</text>
+				<view class="right-tools">
+					<view class="update-badge">
+						<text class="update-time">{{ lastUpdateDisplay || '--' }}</text>
+					</view>
+					<view class="refresh-icon" @click="refreshData">
+						<text class="icon">🔄</text>
+					</view>
 				</view>
 			</view>
 			<view class="dashboard-content">
@@ -158,7 +163,8 @@ export default {
 			totalHoldGains: 0,
 			totalCost: 0,
 			totalAmount: 0,
-			deviceId: ''
+			deviceId: '',
+			lastUpdateDisplay: ''
 		}
 	},
 	onLoad() {
@@ -261,6 +267,9 @@ export default {
 				const result = await getFundData(fundCodes, this.deviceId);
 				const apiData = result.Datas || [];
 				
+				// 计算并显示“更新时间”
+				this.lastUpdateDisplay = this.computeLastUpdateDisplay(apiData);
+				
 				// 更新基金列表数据
 				let todayGains = 0;
 				let holdGains = 0;
@@ -300,17 +309,19 @@ export default {
 							const gszzl = parseFloat(apiFund.gszzl || 0);
 							
 							// 判断净值是否已更新为今日
-							// 这里假设 apiFund.jzrq 是 "2023-05-20" 格式
 							const todayStr = new Date().toISOString().slice(0, 10);
 							const isUpdated = apiFund.jzrq === todayStr;
+							const day = new Date().getDay();
+							const isWeekend = day === 0 || day === 6;
 							
-							// 确定计算用的当前净值 (Current NAV)
-							// 如果净值已更新为今日，则使用 dwjz；否则优先使用 gsz（盘中估值），如果没有 gsz 则回退到 dwjz
+							// 确定计算用的当前净值
 							let currentNav = 0;
 							if (isUpdated) {
 								currentNav = dwjz;
-							} else {
+							} else if (!isWeekend) {
 								currentNav = gsz || dwjz || 0;
+							} else {
+								currentNav = dwjz || 0;
 							}
 							
 							// 持有金额 = 份额 * 当前净值
@@ -323,12 +334,9 @@ export default {
 							if (isUpdated) {
 								// 如果净值已更新，今日收益 = (今日净值 - 昨日净值) * 份额
 								// 昨日净值 = 今日净值 / (1 + 涨跌幅/100)
-								// 注意：apiFund.gszzl 在净值更新后通常会变成 实际涨跌幅
-								// 但有时 apiFund.gszzl 还是估算涨跌幅，需要小心。
-								// 无论如何，我们尝试还原昨日净值来计算精确收益
 								const lastNav = currentNav / (1 + gszzl / 100);
 								gains = (currentNav - lastNav) * localFund.num;
-							} else {
+							} else if (!isWeekend) {
 								// 盘中估算：持有金额(基于昨日净值) * 估算涨跌幅%
 								// 近似计算：当前持有金额 * 估算涨跌幅% / (1 + 估算涨跌幅%) 
 								// 或者简单点：份额 * (当前估算净值 - 昨日净值)
@@ -338,6 +346,8 @@ export default {
 								} else {
 									gains = amount * gszzl / 100;
 								}
+							} else {
+								gains = 0;
 							}
 							
 							updatedFund.gains = gains;
@@ -378,6 +388,54 @@ export default {
 					icon: 'none'
 				});
 			}
+		},
+		computeLastUpdateDisplay(apiData) {
+			if (!apiData || apiData.length === 0) return '';
+			const todayStr = new Date().toISOString().slice(0, 10);
+			const hasTodayNAV = apiData.some(f => f.jzrq === todayStr);
+			
+			// 取当日估值时间的最大值
+			const toTs = (t) => {
+				if (!t) return 0;
+				if (t.length > 10) {
+					const s = t.replace(/-/g, '/');
+					const d = new Date(s);
+					return isNaN(d.getTime()) ? 0 : d.getTime();
+				}
+				if (t.length === 5) {
+					const d = new Date(`${todayStr} ${t}:00`);
+					return isNaN(d.getTime()) ? 0 : d.getTime();
+				}
+				return 0;
+			};
+			
+			let maxTs = 0;
+			let maxStr = '';
+			apiData.forEach(f => {
+				if (f.gztime) {
+					const ts = toTs(f.gztime);
+					if (ts > maxTs) {
+						maxTs = ts;
+						// 标准化为 yyyy-MM-dd HH:mm
+						const d = new Date(ts);
+						const pad = (n) => (n < 10 ? '0' + n : '' + n);
+						maxStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+					}
+				}
+			});
+			
+			if (hasTodayNAV) {
+				// 当日净值已更新，优先显示“日期 净值”
+				return `${todayStr} 净值`;
+			}
+			if (maxStr) return maxStr;
+			
+			// 否则显示最近的净值日期（非当日）
+			let lastJz = '';
+			apiData.forEach(f => {
+				if (f.jzrq && (!lastJz || f.jzrq > lastJz)) lastJz = f.jzrq;
+			});
+			return lastJz ? `${lastJz} 净值` : '';
 		},
 		refreshData() {
 			uni.showLoading({
@@ -460,6 +518,25 @@ export default {
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 20rpx;
+			
+			.right-tools {
+				display: flex;
+				align-items: center;
+			}
+			
+			.update-badge {
+				background: rgba(255,255,255,0.18);
+				border-radius: 20rpx;
+				padding: 6rpx 16rpx;
+				margin-right: 14rpx;
+				box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.06);
+				
+				.update-time {
+					font-size: 22rpx;
+					color: #fff;
+					opacity: 0.92;
+				}
+			}
 		
 		.title {
 			font-size: 28rpx;

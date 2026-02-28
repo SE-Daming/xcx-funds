@@ -49,6 +49,22 @@
   align-items: center;
   margin-bottom: 20rpx;
 }
+.dashboard-card .dashboard-header .right-tools {
+  display: flex;
+  align-items: center;
+}
+.dashboard-card .dashboard-header .update-badge {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 20rpx;
+  padding: 6rpx 16rpx;
+  margin-right: 14rpx;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.06);
+}
+.dashboard-card .dashboard-header .update-badge .update-time {
+  font-size: 22rpx;
+  color: #fff;
+  opacity: 0.92;
+}
 .dashboard-card .dashboard-header .title {
   font-size: 28rpx;
   opacity: 0.9;
