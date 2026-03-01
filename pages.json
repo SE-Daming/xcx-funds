@@ -9,25 +9,25 @@
 		{
 			"path": "pages/fund/detail",
 			"style": {
-				"navigationBarTitleText": "基金详情"
+				"navigationBarTitleText": "藏品详情"
 			}
 		},
 		{
 			"path": "pages/fund/edit",
 			"style": {
-				"navigationBarTitleText": "编辑持仓"
+				"navigationBarTitleText": "编辑藏品"
 			}
 		},
 		{
 			"path": "pages/fund/add",
 			"style": {
-				"navigationBarTitleText": "添加基金"
+				"navigationBarTitleText": "添加藏品"
 			}
 		},
 		{
 			"path": "pages/market/index",
 			"style": {
-				"navigationBarTitleText": "市场行情"
+				"navigationBarTitleText": "参考数据"
 			}
 		},
 		{

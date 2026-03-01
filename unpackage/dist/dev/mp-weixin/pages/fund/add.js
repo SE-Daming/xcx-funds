@@ -49,7 +49,7 @@ const _sfc_main = {
         this.selectedFunds.push(fund);
       } else {
         common_vendor.index.showToast({
-          title: "该基金已选择",
+          title: "该藏品已选择",
           icon: "none"
         });
       }
@@ -60,7 +60,7 @@ const _sfc_main = {
     addSelectedFunds() {
       if (this.selectedFunds.length === 0) {
         common_vendor.index.showToast({
-          title: "请先选择基金",
+          title: "请先选择藏品",
           icon: "none"
         });
         return;
@@ -82,7 +82,7 @@ const _sfc_main = {
       });
       if (newFunds.length === 0) {
         common_vendor.index.showToast({
-          title: "所选基金已在列表中",
+          title: "所选藏品已在列表中",
           icon: "none"
         });
         return;
@@ -96,7 +96,7 @@ const _sfc_main = {
       setTimeout(() => {
         common_vendor.index.hideLoading();
         common_vendor.index.showToast({
-          title: `成功添加${newFunds.length}只基金`,
+          title: `成功添加${newFunds.length}件藏品`,
           icon: "success"
         });
         common_vendor.index.$emit("fundAdded", { count: newFunds.length });

@@ -3,7 +3,7 @@
 		<!-- 总收益概览卡片 -->
 		<view class="dashboard-card" v-if="showGains">
 			<view class="dashboard-header">
-				<text class="title">今日收益(元)</text>
+				<text class="title">今日变动</text>
 				<view class="right-tools">
 					<view class="update-badge">
 						<text class="update-time">{{ lastUpdateDisplay || '--' }}</text>
@@ -22,16 +22,16 @@
 				
 				<view class="gains-grid">
 					<view class="grid-item">
-						<text class="label">持有收益</text>
+						<text class="label">累计变动</text>
 						<text class="value" :class="{ 'red': totalHoldGains >= 0, 'green': totalHoldGains < 0 }">{{ totalHoldGains > 0 ? '+' : '' }}{{ totalHoldGains.toFixed(2) }}</text>
 					</view>
 					<view class="grid-item">
-						<text class="label">持有收益率</text>
+						<text class="label">累计变动率</text>
 						<text class="value" v-if="totalCost > 0" :class="{ 'red': totalHoldGains >= 0, 'green': totalHoldGains < 0 }">{{ totalHoldGains > 0 ? '+' : '' }}{{ ((totalHoldGains / totalCost) * 100).toFixed(2) }}%</text>
 						<text class="value" v-else>0.00%</text>
 					</view>
 					<view class="grid-item">
-						<text class="label">持有金额</text>
+						<text class="label">持有总值</text>
 						<text class="value">{{ totalAmount.toFixed(2) }}</text>
 					</view>
 				</view>
@@ -50,7 +50,7 @@
 				<view class="icon-box market-icon">
 					<text class="icon">📊</text>
 				</view>
-				<text class="label">行情</text>
+				<text class="label">参考</text>
 			</view>
 			<view class="action-item" @click="toggleEditMode">
 				<view class="icon-box edit-icon" :class="{ 'active': isEditMode }">
@@ -69,8 +69,8 @@
 		<!-- 基金列表 -->
 		<view class="fund-list">
 			<view class="list-header" v-if="fundList.length > 0">
-				<text class="title">我的自选</text>
-				<text class="count">{{ fundList.length }}只</text>
+				<text class="title">我的藏品</text>
+				<text class="count">{{ fundList.length }}件</text>
 			</view>
 
 			<view class="fund-card" 
@@ -85,7 +85,7 @@
 						</view>
 						<view class="fund-code-row">
 							<text class="fund-code">{{ fund.code }}</text>
-							<text class="tag" v-if="fund.dwjz">净 {{ fund.dwjz }}</text>
+							<text class="tag" v-if="fund.dwjz">价 {{ fund.dwjz }}</text>
 						</view>
 					</view>
 					
@@ -94,12 +94,12 @@
 							<text class="metric-value" :class="{ 'red': fund.gszzl >= 0, 'green': fund.gszzl < 0 }">
 								{{ fund.gszzl ? (fund.gszzl >= 0 ? '+' : '') + fund.gszzl + '%' : '--' }}
 							</text>
-							<text class="metric-label">估算涨幅</text>
+							<text class="metric-label">预估波动</text>
 						</view>
 						
 						<view class="metric-item secondary-metric" v-if="showGSZ">
 							<text class="metric-value">{{ fund.gsz || '--' }}</text>
-							<text class="metric-label">估算净值</text>
+							<text class="metric-label">预估单价</text>
 						</view>
 					</view>
 				</view>
@@ -111,11 +111,11 @@
 						<text class="value" :class="{ 'red': fund.gains >= 0, 'green': fund.gains < 0 }">{{ fund.gains ? (fund.gains >= 0 ? '+' : '') + fund.gains.toFixed(2) : '--' }}</text>
 					</view>
 					<view class="extra-item" v-if="showCost">
-						<text class="label">持有</text>
+						<text class="label">累计</text>
 						<text class="value" :class="{ 'red': fund.costGains >= 0, 'green': fund.costGains < 0 }">{{ fund.costGains ? (fund.costGains >= 0 ? '+' : '') + fund.costGains.toFixed(2) : '--' }}</text>
 					</view>
 					<view class="extra-item" v-if="showAmount">
-						<text class="label">金额</text>
+						<text class="label">总值</text>
 						<text class="value">{{ fund.amount ? fund.amount.toLocaleString('zh', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--' }}</text>
 					</view>
 				</view>
@@ -134,8 +134,8 @@
 			<!-- 空状态 -->
 			<view class="empty-state" v-if="fundList.length === 0">
 				<view class="empty-icon">📈</view>
-				<text class="empty-text">暂无关注的基金</text>
-				<button class="add-btn" @click="goToAddFund">添加基金</button>
+				<text class="empty-text">暂无关注的藏品</text>
+				<button class="add-btn" @click="goToAddFund">添加藏品</button>
 			</view>
 		</view>
 		

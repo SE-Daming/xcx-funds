@@ -7,34 +7,34 @@
 		
 		<view class="form-section">
 			<view class="form-item">
-				<view class="label">持有份额</view>
+				<view class="label">持有数量</view>
 				<input 
 					class="input" 
 					type="digit" 
-					placeholder="请输入持有份额" 
+					placeholder="请输入持有数量" 
 					v-model="formData.num"
 					@blur="calculateAmount"
 				/>
 			</view>
 			
 			<view class="form-item">
-				<view class="label">持仓成本</view>
+				<view class="label">入手单价</view>
 				<input 
 					class="input" 
 					type="digit" 
-					placeholder="请输入持仓成本价" 
+					placeholder="请输入入手单价" 
 					v-model="formData.cost"
 					@blur="calculateHoldGains"
 				/>
 			</view>
 			
 			<view class="form-item" v-if="formData.num && formData.cost">
-				<view class="label">持有金额</view>
+				<view class="label">持有总值</view>
 				<view class="readonly-value">{{ calculatedAmount }}</view>
 			</view>
 			
 			<view class="form-item" v-if="calculatedHoldGains !== null">
-				<view class="label">当前盈亏</view>
+				<view class="label">当前变动</view>
 				<view class="readonly-value" :class="{'red': calculatedHoldGains >= 0, 'green': calculatedHoldGains < 0}">
 					{{ calculatedHoldGains >= 0 ? '+' : '' }}{{ calculatedHoldGains }}
 				</view>
@@ -42,12 +42,12 @@
 			
 			<!-- 显示当前净值信息 -->
 			<view class="form-item" v-if="fund.gsz">
-				<view class="label">当前估算净值</view>
+				<view class="label">当前预估单价</view>
 				<view class="readonly-value">{{ fund.gsz }}</view>
 			</view>
 			
 			<view class="form-item" v-if="fund.gszzl">
-				<view class="label">估算涨跌幅</view>
+				<view class="label">预估波动</view>
 				<view class="readonly-value" :class="{'red': fund.gszzl >= 0, 'green': fund.gszzl < 0}">
 					{{ fund.gszzl >= 0 ? '+' : '' }}{{ fund.gszzl }}%
 				</view>

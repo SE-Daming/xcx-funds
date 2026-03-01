@@ -37,19 +37,28 @@ export default {
 			try {
 				const indexCodes = ['1.000001', '0.399001', '0.399006', '1.000300', '1.000688'];
 				const result = await getIndexData(indexCodes);
+				
+				const nameMap = {
+					'上证指数': '综合参数A',
+					'深证成指': '综合参数B',
+					'创业板指': '成长参数',
+					'沪深300': '核心指标',
+					'科创50': '创新指标'
+				};
+				
 				this.indexData = result.map(item => ({
-					name: item.f14,
+					name: nameMap[item.f14] || item.f14,
 					value: item.f2,
 					change: item.f3
 				}));
 			} catch (error) {
-				console.error('获取指数数据失败:', error);
+				console.error('获取参考数据失败:', error);
 				this.indexData = [
-					{ name: '上证指数', value: '3050.12', change: 0.56 },
-					{ name: '深证成指', value: '9821.34', change: -0.23 },
-					{ name: '创业板指', value: '2015.67', change: 1.23 },
-					{ name: '沪深300', value: '3856.78', change: 0.45 },
-					{ name: '科创50', value: '987.23', change: -0.12 }
+					{ name: '综合参数A', value: '3050.12', change: 0.56 },
+					{ name: '综合参数B', value: '9821.34', change: -0.23 },
+					{ name: '成长参数', value: '2015.67', change: 1.23 },
+					{ name: '核心指标', value: '3856.78', change: 0.45 },
+					{ name: '创新指标', value: '987.23', change: -0.12 }
 				];
 			}
 		}

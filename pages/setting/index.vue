@@ -3,23 +3,23 @@
 		<view class="setting-section">
 			<view class="section-title">显示设置</view>
 			<view class="setting-item">
-				<view class="setting-label">显示估算净值</view>
+				<view class="setting-label">显示预估单价</view>
 				<switch class="setting-switch" :checked="settings.showGSZ" @change="toggleSetting('showGSZ')" />
 			</view>
 			<view class="setting-item">
-				<view class="setting-label">显示持有金额</view>
+				<view class="setting-label">显示持有总值</view>
 				<switch class="setting-switch" :checked="settings.showAmount" @change="toggleSetting('showAmount')" />
 			</view>
 			<view class="setting-item">
-				<view class="setting-label">显示估算收益</view>
+				<view class="setting-label">显示今日变动</view>
 				<switch class="setting-switch" :checked="settings.showGains" @change="toggleSetting('showGains')" />
 			</view>
 			<view class="setting-item">
-				<view class="setting-label">显示持有收益</view>
+				<view class="setting-label">显示累计变动</view>
 				<switch class="setting-switch" :checked="settings.showCost" @change="toggleSetting('showCost')" />
 			</view>
 			<view class="setting-item">
-				<view class="setting-label">显示持有收益率</view>
+				<view class="setting-label">显示累计变动率</view>
 				<switch class="setting-switch" :checked="settings.showCostRate" @change="toggleSetting('showCostRate')" />
 			</view>
 		</view>

@@ -12,11 +12,11 @@
 					<text class="value" :class="{'red': fundDetail.gszzl > 0, 'green': fundDetail.gszzl < 0}">
 						{{ (fundDetail.gszzl !== null && fundDetail.gszzl !== undefined) ? (fundDetail.gszzl > 0 ? '+' : '') + fundDetail.gszzl + '%' : '--' }}
 					</text>
-					<text class="label">估算涨幅</text>
+					<text class="label">预估波动</text>
 				</view>
 				<view class="metric-sub">
 					<text class="value">{{ fundDetail.gsz || '--' }}</text>
-					<text class="label">估算净值</text>
+					<text class="label">预估单价</text>
 				</view>
 				<view class="metric-sub">
 					<text class="value">{{ fundDetail.gztime ? formatTime(fundDetail.gztime) : '--' }}</text>
@@ -30,19 +30,19 @@
 			<view class="card-title">基本信息</view>
 			<view class="data-grid">
 				<view class="data-item">
-					<text class="label">单位净值</text>
+					<text class="label">当前单价</text>
 					<text class="value">{{ fundDetail.dwjz || '--' }}</text>
 				</view>
 				<view class="data-item">
-					<text class="label">净值日期</text>
+					<text class="label">数据日期</text>
 					<text class="value">{{ fundDetail.jzrq || '--' }}</text>
 				</view>
 				<view class="data-item">
-					<text class="label">持有份额</text>
+					<text class="label">持有数量</text>
 					<text class="value">{{ fundDetail.num || 0 }}</text>
 				</view>
 				<view class="data-item">
-					<text class="label">持仓成本</text>
+					<text class="label">入手单价</text>
 					<text class="value">{{ fundDetail.cost || 0 }}</text>
 				</view>
 			</view>
@@ -52,11 +52,11 @@
 				<view class="divider"></view>
 				<view class="profit-row">
 					<view class="profit-item">
-						<text class="label">持有金额</text>
+						<text class="label">持有总值</text>
 						<text class="value">{{ (fundDetail.num * (fundDetail.jzrq === new Date().toISOString().slice(0, 10) ? (parseFloat(fundDetail.dwjz) || 0) : (parseFloat(fundDetail.gsz) || parseFloat(fundDetail.dwjz) || 0))).toFixed(2) }}</text>
 					</view>
 					<view class="profit-item">
-						<text class="label">持有收益</text>
+						<text class="label">累计变动</text>
 						<view class="profit-values">
 							<text class="value" :class="{'red': calculateProfit() >= 0, 'green': calculateProfit() < 0}">
 								{{ calculateProfit() > 0 ? '+' : '' }}{{ calculateProfit().toFixed(2) }}
@@ -72,7 +72,7 @@
 		
 		<!-- 图表区域 -->
 		<view class="chart-card">
-			<view class="card-title">净值估算趋势</view>
+			<view class="card-title">价格趋势</view>
 			<view class="chart-container">
 				<fund-chart :data="chartData" :labels="chartLabels" :color="chartColor"></fund-chart>
 			</view>
@@ -80,8 +80,8 @@
 		
 		<!-- 底部操作栏 -->
 		<view class="bottom-actions">
-			<button class="action-btn edit" @click="editFund">编辑持仓</button>
-			<button class="action-btn delete" @click="deleteFund">删除自选</button>
+			<button class="action-btn edit" @click="editFund">编辑藏品</button>
+			<button class="action-btn delete" @click="deleteFund">删除藏品</button>
 		</view>
 	</view>
 </template>

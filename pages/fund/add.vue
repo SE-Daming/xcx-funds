@@ -5,7 +5,7 @@
 				<input 
 					class="search-input" 
 					v-model="searchKeyword" 
-					placeholder="请输入基金代码或名称" 
+					placeholder="请输入藏品编号或名称" 
 					@input="searchFunds"
 					@confirm="handleSearch"
 				/>
@@ -35,7 +35,7 @@
 		</view>
 		
 		<view class="action-section" v-if="selectedFunds.length > 0">
-			<button class="submit-btn" @click="addSelectedFunds">添加选中基金 ({{ selectedFunds.length }})</button>
+			<button class="submit-btn" @click="addSelectedFunds">添加选中藏品 ({{ selectedFunds.length }})</button>
 		</view>
 	</view>
 </template>
@@ -95,7 +95,7 @@ export default {
 				this.selectedFunds.push(fund);
 			} else {
 				uni.showToast({
-					title: '该基金已选择',
+					title: '该藏品已选择',
 					icon: 'none'
 				});
 			}
@@ -106,7 +106,7 @@ export default {
 		addSelectedFunds() {
 			if (this.selectedFunds.length === 0) {
 				uni.showToast({
-					title: '请先选择基金',
+					title: '请先选择藏品',
 					icon: 'none'
 				});
 				return;
@@ -131,7 +131,7 @@ export default {
 			
 			if (newFunds.length === 0) {
 				uni.showToast({
-					title: '所选基金已在列表中',
+					title: '所选藏品已在列表中',
 					icon: 'none'
 				});
 				return;
@@ -149,7 +149,7 @@ export default {
 			setTimeout(() => {
 				uni.hideLoading();
 				uni.showToast({
-					title: `成功添加${newFunds.length}只基金`,
+					title: `成功添加${newFunds.length}件藏品`,
 					icon: 'success'
 				});
 				
