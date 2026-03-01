@@ -5,7 +5,7 @@ const utils_dataManager = require("../../utils/data-manager.js");
 const _sfc_main = {
   data() {
     return {
-      title: "基金助手",
+      title: "小蓝条",
       isEditMode: false,
       showAmount: false,
       showGains: false,
@@ -128,29 +128,26 @@ const _sfc_main = {
               const isUpdated = apiFund.jzrq === todayStr;
               const day = (/* @__PURE__ */ new Date()).getDay();
               const isWeekend = day === 0 || day === 6;
+              const useUpdatedMode = isUpdated || isWeekend;
               let currentNav = 0;
-              if (isUpdated) {
+              if (useUpdatedMode) {
                 currentNav = dwjz;
-              } else if (!isWeekend) {
-                currentNav = gsz || dwjz || 0;
               } else {
-                currentNav = dwjz || 0;
+                currentNav = gsz || dwjz || 0;
               }
               const amount = localFund.num * currentNav;
               updatedFund.amount = amount;
               totalAmount += amount;
               let gains = 0;
-              if (isUpdated) {
+              if (useUpdatedMode) {
                 const lastNav = currentNav / (1 + gszzl / 100);
                 gains = (currentNav - lastNav) * localFund.num;
-              } else if (!isWeekend) {
+              } else {
                 if (dwjz > 0) {
                   gains = (currentNav - dwjz) * localFund.num;
                 } else {
                   gains = amount * gszzl / 100;
                 }
-              } else {
-                gains = 0;
               }
               updatedFund.gains = gains;
               todayGains += gains;
@@ -175,7 +172,7 @@ const _sfc_main = {
         this.totalAmount = totalAmount;
         utils_dataManager.DataManager.saveFundList(this.fundList);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/index/index.vue:385", "获取基金数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/index/index.vue:382", "获取基金数据失败:", error);
         common_vendor.index.showToast({
           title: "刷新失败",
           icon: "none"

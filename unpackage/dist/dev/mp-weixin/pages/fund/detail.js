@@ -85,13 +85,12 @@ const _sfc_main = {
       const isUpdated = this.fundDetail.jzrq === todayStr;
       const day = (/* @__PURE__ */ new Date()).getDay();
       const isWeekend = day === 0 || day === 6;
+      const useUpdatedMode = isUpdated || isWeekend;
       let currentPrice = 0;
-      if (isUpdated) {
+      if (useUpdatedMode) {
         currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
-      } else if (!isWeekend) {
-        currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
       } else {
-        currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
+        currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
       }
       if (currentPrice === 0)
         return 0;
@@ -104,13 +103,12 @@ const _sfc_main = {
       const isUpdated = this.fundDetail.jzrq === todayStr;
       const day = (/* @__PURE__ */ new Date()).getDay();
       const isWeekend = day === 0 || day === 6;
+      const useUpdatedMode = isUpdated || isWeekend;
       let currentPrice = 0;
-      if (isUpdated) {
+      if (useUpdatedMode) {
         currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
-      } else if (!isWeekend) {
-        currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
       } else {
-        currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
+        currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
       }
       const cost = parseFloat(this.fundDetail.cost);
       if (currentPrice === 0 || cost === 0)
@@ -148,7 +146,7 @@ const _sfc_main = {
           };
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/fund/detail.vue:256", "加载基金详情失败:", error);
+        common_vendor.index.__f__("error", "at pages/fund/detail.vue:254", "加载基金详情失败:", error);
       } finally {
       }
     },
@@ -161,7 +159,7 @@ const _sfc_main = {
           this.chartData = [];
         }
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/fund/detail.vue:271", "获取图表数据失败", e);
+        common_vendor.index.__f__("error", "at pages/fund/detail.vue:269", "获取图表数据失败", e);
         this.chartData = [];
       }
     },

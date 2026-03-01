@@ -177,14 +177,13 @@ export default {
 			const isUpdated = this.fundDetail.jzrq === todayStr;
 			const day = new Date().getDay();
 			const isWeekend = day === 0 || day === 6;
+			const useUpdatedMode = isUpdated || isWeekend;
 			
 			let currentPrice = 0;
-			if (isUpdated) {
+			if (useUpdatedMode) {
 				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
-			} else if (!isWeekend) {
-				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
 			} else {
-				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
+				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
 			}
 			
 			if (currentPrice === 0) return 0;
@@ -198,14 +197,13 @@ export default {
 			const isUpdated = this.fundDetail.jzrq === todayStr;
 			const day = new Date().getDay();
 			const isWeekend = day === 0 || day === 6;
+			const useUpdatedMode = isUpdated || isWeekend;
 			
 			let currentPrice = 0;
-			if (isUpdated) {
+			if (useUpdatedMode) {
 				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
-			} else if (!isWeekend) {
-				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
 			} else {
-				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
+				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
 			}
 			
 			const cost = parseFloat(this.fundDetail.cost);

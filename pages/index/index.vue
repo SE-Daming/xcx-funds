@@ -151,7 +151,7 @@ import { DataManager } from '@/utils/data-manager.js';
 export default {
 	data() {
 		return {
-			title: '基金助手',
+			title: '小蓝条',
 			isEditMode: false,
 			showAmount: false,
 			showGains: false,
@@ -313,15 +313,14 @@ export default {
 							const isUpdated = apiFund.jzrq === todayStr;
 							const day = new Date().getDay();
 							const isWeekend = day === 0 || day === 6;
+							const useUpdatedMode = isUpdated || isWeekend; // 周末视为已更新口径，按真实净值计算
 							
 							// 确定计算用的当前净值
 							let currentNav = 0;
-							if (isUpdated) {
+							if (useUpdatedMode) {
 								currentNav = dwjz;
-							} else if (!isWeekend) {
-								currentNav = gsz || dwjz || 0;
 							} else {
-								currentNav = dwjz || 0;
+								currentNav = gsz || dwjz || 0;
 							}
 							
 							// 持有金额 = 份额 * 当前净值
@@ -331,12 +330,12 @@ export default {
 							
 							// 今日收益计算
 							let gains = 0;
-							if (isUpdated) {
+							if (useUpdatedMode) {
 								// 如果净值已更新，今日收益 = (今日净值 - 昨日净值) * 份额
 								// 昨日净值 = 今日净值 / (1 + 涨跌幅/100)
 								const lastNav = currentNav / (1 + gszzl / 100);
 								gains = (currentNav - lastNav) * localFund.num;
-							} else if (!isWeekend) {
+							} else {
 								// 盘中估算：持有金额(基于昨日净值) * 估算涨跌幅%
 								// 近似计算：当前持有金额 * 估算涨跌幅% / (1 + 估算涨跌幅%) 
 								// 或者简单点：份额 * (当前估算净值 - 昨日净值)
@@ -346,8 +345,6 @@ export default {
 								} else {
 									gains = amount * gszzl / 100;
 								}
-							} else {
-								gains = 0;
 							}
 							
 							updatedFund.gains = gains;

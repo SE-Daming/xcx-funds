@@ -47,6 +47,20 @@ curl "https://fundmobapi.eastmoney.com/FundMNewApi/FundMNFInfo?pageIndex=1&pageS
 curl "https://fundmobapi.eastmoney.com/FundMApi/FundVarietieValuationDetail.ashx?FCODE=015790&deviceid=Wap&plat=Wap&product=EFund&version=2.0.0"
 ```
 
+主要指数（真实行情）
+
+- 获取上证、深成、创业板、沪深300、科创50
+
+```bash
+curl "https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&fields=f1,f2,f3,f4,f12,f14&secids=1.000001,0.399001,0.399006,1.000300,1.000688"
+```
+
+字段说明：
+- f14 名称
+- f2 当前值
+- f3 涨跌幅（%）
+- f4 涨跌额
+
 附：字段要点
 
 - FundMNFInfo 返回：
@@ -54,4 +68,3 @@ curl "https://fundmobapi.eastmoney.com/FundMApi/FundVarietieValuationDetail.ashx
   - NAV：单位净值（当日已更新时为当日净值）
   - NAVCHGRT：当日实际涨跌幅（仅当日已更新时有效）
   - GSZ、GSZZL、GZTIME：估值相关（可能为空）
-

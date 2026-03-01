@@ -44,14 +44,6 @@
 			</view>
 		</view>
 		
-		<view class="setting-section">
-			<view class="section-title">其他</view>
-			<view class="setting-item" @click="showAbout">
-				<view class="setting-label">关于基金助手</view>
-				<view class="setting-arrow">></view>
-			</view>
-		</view>
-		
 		<view class="logout-section">
 			<button class="logout-btn" @click="logout">退出登录</button>
 		</view>
@@ -199,14 +191,6 @@ export default {
 						});
 					}
 				}
-			});
-		},
-		showAbout() {
-			uni.showModal({
-				title: '关于基金助手',
-				content: '基金助手小程序版本 v1.0.0\n帮助您实时跟踪基金投资情况\n\n韭菜计算助手团队',
-				showCancel: false,
-				confirmText: '确定'
 			});
 		},
 		logout() {

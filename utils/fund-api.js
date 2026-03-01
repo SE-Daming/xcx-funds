@@ -55,9 +55,11 @@ export function getFundData(fundCodes, deviceId = '') {
           await Promise.all(promises);
           
           const todayStr = new Date().toISOString().slice(0, 10);
+          const day = new Date().getDay();
+          const isWeekend = day === 0 || day === 6;
           for (let i = 0; i < fundList.length; i++) {
             const f = fundList[i];
-            if (f && f.jzrq && f.jzrq === todayStr) {
+            if (f && f.jzrq && (f.jzrq === todayStr || isWeekend)) {
               if (typeof f.dwjz === 'number' && !isNaN(f.dwjz)) {
                 f.gsz = f.dwjz;
               }

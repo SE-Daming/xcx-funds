@@ -99,7 +99,7 @@ const _sfc_main = {
                     throw new Error("配置格式不正确");
                   }
                 } catch (e) {
-                  common_vendor.index.__f__("error", "at pages/setting/index.vue:186", "导入数据失败:", e);
+                  common_vendor.index.__f__("error", "at pages/setting/index.vue:178", "导入数据失败:", e);
                   common_vendor.index.showToast({
                     title: "导入失败：格式错误",
                     icon: "none"
@@ -115,14 +115,6 @@ const _sfc_main = {
             });
           }
         }
-      });
-    },
-    showAbout() {
-      common_vendor.index.showModal({
-        title: "关于基金助手",
-        content: "基金助手小程序版本 v1.0.0\n帮助您实时跟踪基金投资情况\n\n韭菜计算助手团队",
-        showCancel: false,
-        confirmText: "确定"
       });
     },
     logout() {
@@ -158,8 +150,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     l: common_vendor.o((...args) => $options.toggleTheme && $options.toggleTheme(...args)),
     m: common_vendor.o((...args) => $options.exportData && $options.exportData(...args)),
     n: common_vendor.o((...args) => $options.importData && $options.importData(...args)),
-    o: common_vendor.o((...args) => $options.showAbout && $options.showAbout(...args)),
-    p: common_vendor.o((...args) => $options.logout && $options.logout(...args))
+    o: common_vendor.o((...args) => $options.logout && $options.logout(...args))
   };
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);

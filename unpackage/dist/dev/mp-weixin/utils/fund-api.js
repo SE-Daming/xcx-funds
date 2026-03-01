@@ -40,9 +40,11 @@ function getFundData(fundCodes, deviceId = "") {
           });
           await Promise.all(promises);
           const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+          const day = (/* @__PURE__ */ new Date()).getDay();
+          const isWeekend = day === 0 || day === 6;
           for (let i = 0; i < fundList.length; i++) {
             const f = fundList[i];
-            if (f && f.jzrq && f.jzrq === todayStr) {
+            if (f && f.jzrq && (f.jzrq === todayStr || isWeekend)) {
               if (typeof f.dwjz === "number" && !isNaN(f.dwjz)) {
                 f.gsz = f.dwjz;
               }
@@ -53,12 +55,12 @@ function getFundData(fundCodes, deviceId = "") {
           }
           resolve({ Datas: fundList });
         } else {
-          common_vendor.index.__f__("error", "at utils/fund-api.js:72", "基金数据获取失败:", res);
+          common_vendor.index.__f__("error", "at utils/fund-api.js:74", "基金数据获取失败:", res);
           resolve({ Datas: [] });
         }
       },
       fail: (err) => {
-        common_vendor.index.__f__("error", "at utils/fund-api.js:77", "请求基金数据失败:", err);
+        common_vendor.index.__f__("error", "at utils/fund-api.js:79", "请求基金数据失败:", err);
         resolve({ Datas: [] });
       }
     });
@@ -116,7 +118,7 @@ function searchFunds(keyword) {
         }
       },
       fail: (err) => {
-        common_vendor.index.__f__("error", "at utils/fund-api.js:152", "搜索基金失败:", err);
+        common_vendor.index.__f__("error", "at utils/fund-api.js:154", "搜索基金失败:", err);
         resolve([]);
       }
     });
@@ -147,7 +149,7 @@ function getIndexData(indexCodes) {
         }
       },
       fail: (err) => {
-        common_vendor.index.__f__("error", "at utils/fund-api.js:192", "获取指数数据失败:", err);
+        common_vendor.index.__f__("error", "at utils/fund-api.js:194", "获取指数数据失败:", err);
         resolve([]);
       }
     });
