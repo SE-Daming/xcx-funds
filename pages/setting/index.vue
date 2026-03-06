@@ -19,7 +19,7 @@
 				<switch class="setting-switch" :checked="settings.showCost" @change="toggleSetting('showCost')" />
 			</view>
 			<view class="setting-item">
-				<view class="setting-label">显示累计变动率</view>
+				<view class="setting-label">显示持有收益率</view>
 				<switch class="setting-switch" :checked="settings.showCostRate" @change="toggleSetting('showCostRate')" />
 			</view>
 		</view>

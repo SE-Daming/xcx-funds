@@ -18,7 +18,15 @@ const _sfc_main = {
       totalCost: 0,
       totalAmount: 0,
       deviceId: "",
-      lastUpdateDisplay: ""
+      lastUpdateDisplay: "",
+      sortType: "none",
+      sortOrder: "desc",
+      sortTypeRange: ["预估收益", "持有收益", "预估收益率", "持有收益率", "持有金额"],
+      sortTypeKeyRange: ["gains", "costGains", "gszzl", "costGainsRate", "amount"],
+      sortOrderRange: ["降序", "升序"],
+      sortOrderKeyRange: ["desc", "asc"],
+      sortTypeIndex: 0,
+      sortOrderIndex: 0
     };
   },
   onLoad() {
@@ -44,6 +52,14 @@ const _sfc_main = {
       this.loadFundList();
     });
   },
+  computed: {
+    sortTypeLabel() {
+      return this.sortTypeRange[this.sortTypeIndex] || "排序";
+    },
+    sortOrderLabel() {
+      return this.sortOrderRange[this.sortOrderIndex] || "降序";
+    }
+  },
   beforeDestroy() {
     common_vendor.index.$off("fundUpdated");
     common_vendor.index.$off("fundAdded");
@@ -61,6 +77,12 @@ const _sfc_main = {
       this.showCost = settings.showCost || false;
       this.showCostRate = settings.showCostRate || false;
       this.showGSZ = settings.showGSZ || false;
+      this.sortType = settings.sortType || "none";
+      this.sortOrder = settings.sortOrder || "desc";
+      const ti = this.sortTypeKeyRange.indexOf(this.sortType);
+      this.sortTypeIndex = ti >= 0 ? ti : 0;
+      const oi = this.sortOrderKeyRange.indexOf(this.sortOrder);
+      this.sortOrderIndex = oi >= 0 ? oi : 0;
     },
     loadFundList() {
       this.fundList = utils_dataManager.DataManager.getFundList();
@@ -90,6 +112,7 @@ const _sfc_main = {
         this.totalCost = 0;
         this.totalAmount = 0;
       }
+      this.applySort();
     },
     async fetchFundData() {
       if (this.fundList.length === 0)
@@ -171,8 +194,9 @@ const _sfc_main = {
         this.totalCost = totalCost;
         this.totalAmount = totalAmount;
         utils_dataManager.DataManager.saveFundList(this.fundList);
+        this.applySort();
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/index/index.vue:382", "获取基金数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/index/index.vue:427", "获取基金数据失败:", error);
         common_vendor.index.showToast({
           title: "刷新失败",
           icon: "none"
@@ -279,6 +303,42 @@ const _sfc_main = {
           }
         }
       });
+    },
+    setSort(type) {
+      this.sortType = type;
+      const settings = utils_dataManager.DataManager.getSettings();
+      utils_dataManager.DataManager.saveSettings({ ...settings, sortType: type });
+      this.applySort();
+    },
+    onSortTypeChange(e) {
+      const idx = Number(e.detail.value);
+      this.sortTypeIndex = idx;
+      const type = this.sortTypeKeyRange[idx];
+      this.setSort(type);
+    },
+    onSortOrderChange(e) {
+      const idx = Number(e.detail.value);
+      this.sortOrderIndex = idx;
+      const order = this.sortOrderKeyRange[idx];
+      this.setOrder(order);
+    },
+    setOrder(order) {
+      this.sortOrder = order;
+      const settings = utils_dataManager.DataManager.getSettings();
+      utils_dataManager.DataManager.saveSettings({ ...settings, sortOrder: order });
+      this.applySort();
+    },
+    applySort() {
+      if (!this.sortType || this.sortType === "none")
+        return;
+      const key = this.sortType;
+      const list = [...this.fundList];
+      list.sort((a, b) => {
+        const av = parseFloat(a[key] || 0);
+        const bv = parseFloat(b[key] || 0);
+        return this.sortOrder === "desc" ? bv - av : av - bv;
+      });
+      this.fundList = list;
     }
   }
 };
@@ -313,9 +373,15 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     x: common_vendor.o((...args) => $options.goToSettings && $options.goToSettings(...args)),
     y: $data.fundList.length > 0
   }, $data.fundList.length > 0 ? {
-    z: common_vendor.t($data.fundList.length)
+    z: common_vendor.t($data.fundList.length),
+    A: common_vendor.t($options.sortTypeLabel),
+    B: $data.sortTypeRange,
+    C: $data.sortTypeIndex,
+    D: common_vendor.o((...args) => $options.onSortTypeChange && $options.onSortTypeChange(...args)),
+    E: common_vendor.t($data.sortOrder === "desc" ? "↓" : "↑"),
+    F: common_vendor.o(($event) => $options.setOrder($data.sortOrder === "desc" ? "asc" : "desc"))
   } : {}, {
-    A: common_vendor.f($data.fundList, (fund, index, i0) => {
+    G: common_vendor.f($data.fundList, (fund, index, i0) => {
       return common_vendor.e({
         a: common_vendor.t(fund.name),
         b: common_vendor.t(fund.code),
@@ -347,22 +413,28 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2
         }) : "--")
+      } : {}, {
+        s: $data.showCostRate
+      }, $data.showCostRate ? {
+        t: common_vendor.t(fund.costGainsRate !== void 0 ? (parseFloat(fund.costGainsRate) >= 0 ? "+" : "") + fund.costGainsRate + "%" : "--"),
+        v: parseFloat(fund.costGainsRate) >= 0 ? 1 : "",
+        w: parseFloat(fund.costGainsRate) < 0 ? 1 : ""
       } : {}) : {}, $data.isEditMode ? {
-        s: common_vendor.o(($event) => $options.editFund(fund, index), fund.code),
-        t: common_vendor.o(($event) => $options.deleteFund(index), fund.code),
-        v: common_vendor.o(() => {
+        x: common_vendor.o(($event) => $options.editFund(fund, index), fund.code),
+        y: common_vendor.o(($event) => $options.deleteFund(index), fund.code),
+        z: common_vendor.o(() => {
         }, fund.code)
       } : {}, {
-        w: fund.code,
-        x: common_vendor.o(($event) => $options.goToFundDetail(fund), fund.code)
+        A: fund.code,
+        B: common_vendor.o(($event) => $options.goToFundDetail(fund), fund.code)
       });
     }),
-    B: $data.showGSZ,
-    C: $data.showGains || $data.showCost || $data.showAmount,
-    D: $data.isEditMode,
-    E: $data.fundList.length === 0
+    H: $data.showGSZ,
+    I: $data.showGains || $data.showCost || $data.showAmount,
+    J: $data.isEditMode,
+    K: $data.fundList.length === 0
   }, $data.fundList.length === 0 ? {
-    F: common_vendor.o((...args) => $options.goToAddFund && $options.goToAddFund(...args))
+    L: common_vendor.o((...args) => $options.goToAddFund && $options.goToAddFund(...args))
   } : {});
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);

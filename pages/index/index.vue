@@ -71,6 +71,16 @@
 			<view class="list-header" v-if="fundList.length > 0">
 				<text class="title">我的藏品</text>
 				<text class="count">{{ fundList.length }}件</text>
+				<view class="sort-bar">
+					<picker mode="selector" :range="sortTypeRange" :value="sortTypeIndex" @change="onSortTypeChange">
+						<view class="dropdown">
+							<text>{{ sortTypeLabel }} ▾</text>
+						</view>
+					</picker>
+					<view class="order-toggle" @click.stop="setOrder(sortOrder === 'desc' ? 'asc' : 'desc')">
+						<text>{{ sortOrder === 'desc' ? '↓' : '↑' }}</text>
+					</view>
+				</view>
 			</view>
 
 			<view class="fund-card" 
@@ -118,6 +128,12 @@
 						<text class="label">总值</text>
 						<text class="value">{{ fund.amount ? fund.amount.toLocaleString('zh', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--' }}</text>
 					</view>
+					<view class="extra-item" v-if="showCostRate">
+						<text class="label">持有收益率</text>
+						<text class="value" :class="{ 'red': parseFloat(fund.costGainsRate) >= 0, 'green': parseFloat(fund.costGainsRate) < 0 }">
+							{{ fund.costGainsRate !== undefined ? (parseFloat(fund.costGainsRate) >= 0 ? '+' : '') + fund.costGainsRate + '%' : '--' }}
+						</text>
+					</view>
 				</view>
 				
 				<!-- 编辑模式覆盖层 -->
@@ -164,7 +180,15 @@ export default {
 			totalCost: 0,
 			totalAmount: 0,
 			deviceId: '',
-			lastUpdateDisplay: ''
+			lastUpdateDisplay: '',
+			sortType: 'none',
+			sortOrder: 'desc',
+			sortTypeRange: ['预估收益', '持有收益', '预估收益率', '持有收益率', '持有金额'],
+			sortTypeKeyRange: ['gains', 'costGains', 'gszzl', 'costGainsRate', 'amount'],
+			sortOrderRange: ['降序', '升序'],
+			sortOrderKeyRange: ['desc', 'asc'],
+			sortTypeIndex: 0,
+			sortOrderIndex: 0
 		}
 	},
 	onLoad() {
@@ -201,6 +225,14 @@ export default {
 			this.loadFundList();
 		});
 	},
+	computed: {
+		sortTypeLabel() {
+			return this.sortTypeRange[this.sortTypeIndex] || '排序';
+		},
+		sortOrderLabel() {
+			return this.sortOrderRange[this.sortOrderIndex] || '降序';
+		}
+	},
 	
 	beforeDestroy() {
 		// 移除事件监听器
@@ -223,6 +255,13 @@ export default {
 			this.showCost = settings.showCost || false;
 			this.showCostRate = settings.showCostRate || false;
 			this.showGSZ = settings.showGSZ || false;
+			this.sortType = settings.sortType || 'none';
+			this.sortOrder = settings.sortOrder || 'desc';
+			// 同步下拉索引
+			const ti = this.sortTypeKeyRange.indexOf(this.sortType);
+			this.sortTypeIndex = ti >= 0 ? ti : 0;
+			const oi = this.sortOrderKeyRange.indexOf(this.sortOrder);
+			this.sortOrderIndex = oi >= 0 ? oi : 0;
 		},
 		loadFundList() {
 			// 从本地存储加载基金列表
@@ -255,6 +294,9 @@ export default {
 				this.totalCost = 0;
 				this.totalAmount = 0;
 			}
+			
+			// 初次加载时根据设置排序
+			this.applySort();
 		},
 		async fetchFundData() {
 			if (this.fundList.length === 0) return;
@@ -378,6 +420,9 @@ export default {
 				// 保存更新后的基金列表到本地存储，以便下次进入时显示
 				DataManager.saveFundList(this.fundList);
 				
+				// 获取到最新数据后再应用排序
+				this.applySort();
+				
 			} catch (error) {
 				console.error('获取基金数据失败:', error);
 				uni.showToast({
@@ -489,6 +534,42 @@ export default {
 					}
 				}
 			});
+		},
+		setSort(type) {
+			this.sortType = type;
+			const settings = DataManager.getSettings();
+			DataManager.saveSettings({ ...settings, sortType: type });
+			this.applySort();
+		},
+		onSortTypeChange(e) {
+			const idx = Number(e.detail.value);
+			this.sortTypeIndex = idx;
+			const type = this.sortTypeKeyRange[idx];
+			this.setSort(type);
+		},
+		onSortOrderChange(e) {
+			const idx = Number(e.detail.value);
+			this.sortOrderIndex = idx;
+			const order = this.sortOrderKeyRange[idx];
+			this.setOrder(order);
+		},
+		setOrder(order) {
+			this.sortOrder = order;
+			const settings = DataManager.getSettings();
+			DataManager.saveSettings({ ...settings, sortOrder: order });
+			this.applySort();
+		},
+		applySort() {
+			if (!this.sortType || this.sortType === 'none') return;
+			const key = this.sortType;
+			// 创建副本排序，避免直接改动引用造成渲染异常
+			const list = [...this.fundList];
+			list.sort((a, b) => {
+				const av = parseFloat(a[key] || 0);
+				const bv = parseFloat(b[key] || 0);
+				return this.sortOrder === 'desc' ? (bv - av) : (av - bv);
+			});
+			this.fundList = list;
 		}
 	}
 }
@@ -664,6 +745,40 @@ export default {
 		.count {
 			font-size: 24rpx;
 			color: $uni-text-color-grey;
+		}
+		
+		.sort-bar {
+			display: flex;
+			align-items: center;
+			margin-left: auto;
+			
+			.dropdown {
+				padding: 8rpx 16rpx;
+				margin-left: 12rpx;
+				background-color: #f5f7fa;
+				border-radius: 20rpx;
+				font-size: 24rpx;
+				color: $uni-text-color-grey;
+				border: 2rpx solid transparent;
+			}
+			.dropdown:active {
+				border-color: $uni-color-primary;
+				color: $uni-color-primary;
+				background-color: rgba(41, 121, 255, 0.08);
+			}
+			.order-toggle {
+				margin-left: 12rpx;
+				padding: 8rpx 16rpx;
+				background-color: #f5f7fa;
+				border-radius: 20rpx;
+				font-size: 24rpx;
+				color: $uni-text-color-grey;
+			}
+			.order-toggle:active {
+				border: 2rpx solid $uni-color-primary;
+				color: $uni-color-primary;
+				background-color: rgba(41, 121, 255, 0.08);
+			}
 		}
 	}
 	
