@@ -174,67 +174,9 @@ const _sfc_main = {
         }
       });
     },
-    showImportTutorial() {
-      const prompt = "请识别图片中的基金持仓信息，并输出为如下JSON格式";
-      const exampleJson = `{
-  "settings": {
-    "showAmount": true,
-    "showGains": true,
-    "showCost": true,
-    "showCostRate": true,
-    "showGSZ": true,
-    "darkMode": false
-  },
-  "fundList": [
-    {
-      "code": "",
-      "name": "",
-      "num": "",
-      "cost": "",
-      "gsz": 0,
-      "gszzl": 0,
-      "dwjz": 0,
-      "jzrq": "",
-      "gztime": "",
-      "amount": 0,
-      "gains": 0,
-      "costGains": 0,
-      "costGainsRate": ""
-    }
-  ],
-  "version": "1.0.0"
-}`;
-      const content = "1. 截图你的基金持仓界面\n2. 发给豆包/DeepSeek，让它按提示词输出JSON\n3. 复制AI输出的JSON\n4. 回到本页面点“新增/导入配置”导入\n\n点左下角“复制”可复制提示词+JSON示例";
-      common_vendor.index.showModal({
-        title: "一键导入教程",
-        content,
-        showCancel: true,
-        cancelText: "复制",
-        confirmText: "关闭",
-        success: (res) => {
-          if (res.cancel) {
-            const copyContent = `提示词：${prompt}
-
-JSON示例：
-${exampleJson}`;
-            common_vendor.index.setClipboardData({
-              data: copyContent,
-              success: () => {
-                common_vendor.index.showToast({
-                  title: "已复制",
-                  icon: "none"
-                });
-              }
-            });
-          }
-        },
-        fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/setting/index.vue:322", "showModal失败:", err);
-          common_vendor.index.showToast({
-            title: "弹窗打开失败",
-            icon: "none"
-          });
-        }
+    goToMarket() {
+      common_vendor.index.navigateTo({
+        url: "/pages/market/index"
       });
     },
     logout() {
@@ -269,7 +211,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     k: common_vendor.o((...args) => $options.exportData && $options.exportData(...args)),
     l: common_vendor.o((...args) => $options.importData && $options.importData(...args)),
     m: common_vendor.o((...args) => $options.appendData && $options.appendData(...args)),
-    n: common_vendor.o((...args) => $options.showImportTutorial && $options.showImportTutorial(...args)),
+    n: common_vendor.o((...args) => $options.goToMarket && $options.goToMarket(...args)),
     o: common_vendor.o((...args) => $options.logout && $options.logout(...args))
   };
 }

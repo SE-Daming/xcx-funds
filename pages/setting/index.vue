@@ -38,8 +38,8 @@
 				<view class="setting-label">新增配置</view>
 				<view class="setting-arrow">></view>
 			</view>
-			<view class="setting-item" @click="showImportTutorial">
-				<view class="setting-label">一键导入教程</view>
+			<view class="setting-item" @click="goToMarket">
+				<view class="setting-label">参考</view>
 				<view class="setting-arrow">></view>
 			</view>
 		</view>
@@ -261,70 +261,9 @@ export default {
 				}
 			});
 		},
-		showImportTutorial() {
-			const prompt = '请识别图片中的基金持仓信息，并输出为如下JSON格式';
-			const exampleJson = `{
-  "settings": {
-    "showAmount": true,
-    "showGains": true,
-    "showCost": true,
-    "showCostRate": true,
-    "showGSZ": true,
-    "darkMode": false
-  },
-  "fundList": [
-    {
-      "code": "",
-      "name": "",
-      "num": "",
-      "cost": "",
-      "gsz": 0,
-      "gszzl": 0,
-      "dwjz": 0,
-      "jzrq": "",
-      "gztime": "",
-      "amount": 0,
-      "gains": 0,
-      "costGains": 0,
-      "costGainsRate": ""
-    }
-  ],
-  "version": "1.0.0"
-}`;
-			
-			const content = '1. 截图你的基金持仓界面\n' +
-						  '2. 发给豆包/DeepSeek，让它按提示词输出JSON\n' +
-						  '3. 复制AI输出的JSON\n' +
-						  '4. 回到本页面点“新增/导入配置”导入\n\n' +
-						  '点左下角“复制”可复制提示词+JSON示例';
-			
-			uni.showModal({
-				title: '一键导入教程',
-				content: content,
-				showCancel: true,
-				cancelText: '复制',
-				confirmText: '关闭',
-				success: (res) => {
-					if (res.cancel) {
-						const copyContent = `提示词：${prompt}\n\nJSON示例：\n${exampleJson}`;
-						uni.setClipboardData({
-							data: copyContent,
-							success: () => {
-								uni.showToast({
-									title: '已复制',
-									icon: 'none'
-								});
-							}
-						});
-					}
-				},
-				fail: (err) => {
-					console.error('showModal失败:', err);
-					uni.showToast({
-						title: '弹窗打开失败',
-						icon: 'none'
-					});
-				}
+		goToMarket() {
+			uni.navigateTo({
+				url: '/pages/market/index'
 			});
 		},
 		logout() {
