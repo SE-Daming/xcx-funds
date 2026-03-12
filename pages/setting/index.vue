@@ -25,14 +25,6 @@
 		</view>
 		
 		<view class="setting-section">
-			<view class="section-title">主题设置</view>
-			<view class="setting-item">
-				<view class="setting-label">暗色模式</view>
-				<switch class="setting-switch" :checked="settings.darkMode" @change="toggleTheme" />
-			</view>
-		</view>
-		
-		<view class="setting-section">
 			<view class="section-title">数据管理</view>
 			<view class="setting-item" @click="exportData">
 				<view class="setting-label">导出配置</view>
@@ -40,6 +32,14 @@
 			</view>
 			<view class="setting-item" @click="importData">
 				<view class="setting-label">导入配置</view>
+				<view class="setting-arrow">></view>
+			</view>
+			<view class="setting-item" @click="appendData">
+				<view class="setting-label">新增配置</view>
+				<view class="setting-arrow">></view>
+			</view>
+			<view class="setting-item" @click="showImportTutorial">
+				<view class="setting-label">一键导入教程</view>
 				<view class="setting-arrow">></view>
 			</view>
 		</view>
@@ -76,34 +76,10 @@ export default {
 			if (savedSettings) {
 				this.settings = { ...this.settings, ...savedSettings };
 			}
-			
-			// 应用主题设置
-			this.applyTheme();
 		},
 		toggleSetting(settingName) {
 			this.settings[settingName] = !this.settings[settingName];
 			this.saveSettings();
-		},
-		toggleTheme() {
-			this.settings.darkMode = !this.settings.darkMode;
-			this.saveSettings();
-			
-			// 应用主题变化
-			this.applyTheme();
-		},
-		applyTheme() {
-			// 应用主题变化
-			if (this.settings.darkMode) {
-				uni.setNavigationBarColor({
-					frontColor: '#ffffff',
-					backgroundColor: '#2c3e50'
-				});
-			} else {
-				uni.setNavigationBarColor({
-					frontColor: '#000000',
-					backgroundColor: '#F8F8F8'
-				});
-			}
 		},
 		saveSettings() {
 			// 保存设置
@@ -164,9 +140,6 @@ export default {
 										// 更新当前设置
 										this.settings = importedData.settings;
 										
-										// 应用主题设置
-										this.applyTheme();
-										
 										uni.showToast({
 											title: '导入成功',
 											icon: 'success'
@@ -190,6 +163,167 @@ export default {
 							}
 						});
 					}
+				}
+			});
+		},
+		appendData() {
+			// 新增配置逻辑（追加模式）
+			uni.showModal({
+				title: '新增配置',
+				content: '请确保已将配置数据（JSON格式）复制到剪贴板，新数据将追加到现有列表中。',
+				success: (res) => {
+					if (res.confirm) {
+						uni.getClipboardData({
+							success: (res) => {
+								try {
+									let newFunds = [];
+									let importedData = null;
+									
+									// 尝试解析JSON
+									try {
+										importedData = JSON.parse(res.data);
+									} catch(e) {
+										throw new Error('剪贴板内容不是有效的JSON格式');
+									}
+
+									// 识别数据格式
+									if (Array.isArray(importedData)) {
+										// 格式：[...]
+										newFunds = importedData;
+									} else if (importedData && Array.isArray(importedData.fundList)) {
+										// 格式：{ fundList: [...], ... }
+										newFunds = importedData.fundList;
+									} else {
+										throw new Error('未识别到有效的基金列表数据');
+									}
+									
+									if (newFunds.length === 0) {
+										uni.showToast({ title: '没有包含任何基金数据', icon: 'none' });
+										return;
+									}
+
+									// 获取现有列表
+									const currentFunds = DataManager.getFundList();
+									const existingCodes = new Set(currentFunds.map(f => f.code));
+									
+									let addedCount = 0;
+									let skippedCount = 0;
+									
+									// 遍历新数据并去重追加
+									newFunds.forEach(fund => {
+										if (fund && fund.code) {
+											if (!existingCodes.has(fund.code)) {
+												currentFunds.push(fund);
+												existingCodes.add(fund.code);
+												addedCount++;
+											} else {
+												skippedCount++;
+											}
+										}
+									});
+									
+									if (addedCount > 0) {
+										// 保存更新后的列表
+										DataManager.saveFundList(currentFunds);
+										// 通知更新
+										uni.$emit('fundAdded', {}); 
+										
+										uni.showModal({
+											title: '新增成功',
+											content: `成功添加 ${addedCount} 个基金，跳过 ${skippedCount} 个已存在的基金。`,
+											showCancel: false
+										});
+									} else {
+										uni.showModal({
+											title: '未添加',
+											content: `所有 ${skippedCount} 个基金均已存在。`,
+											showCancel: false
+										});
+									}
+									
+								} catch (e) {
+									console.error('新增配置失败:', e);
+									uni.showModal({
+										title: '解析失败',
+										content: e.message || '数据格式错误',
+										showCancel: false
+									});
+								}
+							},
+							fail: () => {
+								uni.showToast({
+									title: '读取剪贴板失败',
+									icon: 'none'
+								});
+							}
+						});
+					}
+				}
+			});
+		},
+		showImportTutorial() {
+			const prompt = '请识别图片中的基金持仓信息，并输出为如下JSON格式';
+			const exampleJson = `{
+  "settings": {
+    "showAmount": true,
+    "showGains": true,
+    "showCost": true,
+    "showCostRate": true,
+    "showGSZ": true,
+    "darkMode": false
+  },
+  "fundList": [
+    {
+      "code": "",
+      "name": "",
+      "num": "",
+      "cost": "",
+      "gsz": 0,
+      "gszzl": 0,
+      "dwjz": 0,
+      "jzrq": "",
+      "gztime": "",
+      "amount": 0,
+      "gains": 0,
+      "costGains": 0,
+      "costGainsRate": ""
+    }
+  ],
+  "version": "1.0.0"
+}`;
+			
+			const content = '1. 截图你的基金持仓界面\n' +
+						  '2. 发给豆包/DeepSeek，让它按提示词输出JSON\n' +
+						  '3. 复制AI输出的JSON\n' +
+						  '4. 回到本页面点“新增/导入配置”导入\n\n' +
+						  '点左下角“复制”可复制提示词+JSON示例';
+			
+			uni.showModal({
+				title: '一键导入教程',
+				content: content,
+				showCancel: true,
+				cancelText: '复制',
+				confirmText: '关闭',
+				success: (res) => {
+					if (res.cancel) {
+						const copyContent = `提示词：${prompt}\n\nJSON示例：\n${exampleJson}`;
+						uni.setClipboardData({
+							data: copyContent,
+							success: () => {
+								uni.showToast({
+									title: '已复制',
+									icon: 'none'
+								});
+							}
+						});
+					}
+				},
+				fail: (err) => {
+					console.error('showModal失败:', err);
+					uni.showToast({
+						title: '弹窗打开失败',
+						icon: 'none'
+					});
 				}
 			});
 		},

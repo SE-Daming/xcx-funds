@@ -23,29 +23,10 @@ const _sfc_main = {
       if (savedSettings) {
         this.settings = { ...this.settings, ...savedSettings };
       }
-      this.applyTheme();
     },
     toggleSetting(settingName) {
       this.settings[settingName] = !this.settings[settingName];
       this.saveSettings();
-    },
-    toggleTheme() {
-      this.settings.darkMode = !this.settings.darkMode;
-      this.saveSettings();
-      this.applyTheme();
-    },
-    applyTheme() {
-      if (this.settings.darkMode) {
-        common_vendor.index.setNavigationBarColor({
-          frontColor: "#ffffff",
-          backgroundColor: "#2c3e50"
-        });
-      } else {
-        common_vendor.index.setNavigationBarColor({
-          frontColor: "#000000",
-          backgroundColor: "#F8F8F8"
-        });
-      }
     },
     saveSettings() {
       utils_dataManager.DataManager.saveSettings(this.settings);
@@ -90,7 +71,6 @@ const _sfc_main = {
                     utils_dataManager.DataManager.saveSettings(importedData.settings);
                     utils_dataManager.DataManager.saveFundList(importedData.fundList);
                     this.settings = importedData.settings;
-                    this.applyTheme();
                     common_vendor.index.showToast({
                       title: "导入成功",
                       icon: "success"
@@ -99,7 +79,7 @@ const _sfc_main = {
                     throw new Error("配置格式不正确");
                   }
                 } catch (e) {
-                  common_vendor.index.__f__("error", "at pages/setting/index.vue:178", "导入数据失败:", e);
+                  common_vendor.index.__f__("error", "at pages/setting/index.vue:151", "导入数据失败:", e);
                   common_vendor.index.showToast({
                     title: "导入失败：格式错误",
                     icon: "none"
@@ -114,6 +94,146 @@ const _sfc_main = {
               }
             });
           }
+        }
+      });
+    },
+    appendData() {
+      common_vendor.index.showModal({
+        title: "新增配置",
+        content: "请确保已将配置数据（JSON格式）复制到剪贴板，新数据将追加到现有列表中。",
+        success: (res) => {
+          if (res.confirm) {
+            common_vendor.index.getClipboardData({
+              success: (res2) => {
+                try {
+                  let newFunds = [];
+                  let importedData = null;
+                  try {
+                    importedData = JSON.parse(res2.data);
+                  } catch (e) {
+                    throw new Error("剪贴板内容不是有效的JSON格式");
+                  }
+                  if (Array.isArray(importedData)) {
+                    newFunds = importedData;
+                  } else if (importedData && Array.isArray(importedData.fundList)) {
+                    newFunds = importedData.fundList;
+                  } else {
+                    throw new Error("未识别到有效的基金列表数据");
+                  }
+                  if (newFunds.length === 0) {
+                    common_vendor.index.showToast({ title: "没有包含任何基金数据", icon: "none" });
+                    return;
+                  }
+                  const currentFunds = utils_dataManager.DataManager.getFundList();
+                  const existingCodes = new Set(currentFunds.map((f) => f.code));
+                  let addedCount = 0;
+                  let skippedCount = 0;
+                  newFunds.forEach((fund) => {
+                    if (fund && fund.code) {
+                      if (!existingCodes.has(fund.code)) {
+                        currentFunds.push(fund);
+                        existingCodes.add(fund.code);
+                        addedCount++;
+                      } else {
+                        skippedCount++;
+                      }
+                    }
+                  });
+                  if (addedCount > 0) {
+                    utils_dataManager.DataManager.saveFundList(currentFunds);
+                    common_vendor.index.$emit("fundAdded", {});
+                    common_vendor.index.showModal({
+                      title: "新增成功",
+                      content: `成功添加 ${addedCount} 个基金，跳过 ${skippedCount} 个已存在的基金。`,
+                      showCancel: false
+                    });
+                  } else {
+                    common_vendor.index.showModal({
+                      title: "未添加",
+                      content: `所有 ${skippedCount} 个基金均已存在。`,
+                      showCancel: false
+                    });
+                  }
+                } catch (e) {
+                  common_vendor.index.__f__("error", "at pages/setting/index.vue:245", "新增配置失败:", e);
+                  common_vendor.index.showModal({
+                    title: "解析失败",
+                    content: e.message || "数据格式错误",
+                    showCancel: false
+                  });
+                }
+              },
+              fail: () => {
+                common_vendor.index.showToast({
+                  title: "读取剪贴板失败",
+                  icon: "none"
+                });
+              }
+            });
+          }
+        }
+      });
+    },
+    showImportTutorial() {
+      const prompt = "请识别图片中的基金持仓信息，并输出为如下JSON格式";
+      const exampleJson = `{
+  "settings": {
+    "showAmount": true,
+    "showGains": true,
+    "showCost": true,
+    "showCostRate": true,
+    "showGSZ": true,
+    "darkMode": false
+  },
+  "fundList": [
+    {
+      "code": "",
+      "name": "",
+      "num": "",
+      "cost": "",
+      "gsz": 0,
+      "gszzl": 0,
+      "dwjz": 0,
+      "jzrq": "",
+      "gztime": "",
+      "amount": 0,
+      "gains": 0,
+      "costGains": 0,
+      "costGainsRate": ""
+    }
+  ],
+  "version": "1.0.0"
+}`;
+      const content = "1. 截图你的基金持仓界面\n2. 发给豆包/DeepSeek，让它按提示词输出JSON\n3. 复制AI输出的JSON\n4. 回到本页面点“新增/导入配置”导入\n\n点左下角“复制”可复制提示词+JSON示例";
+      common_vendor.index.showModal({
+        title: "一键导入教程",
+        content,
+        showCancel: true,
+        cancelText: "复制",
+        confirmText: "关闭",
+        success: (res) => {
+          if (res.cancel) {
+            const copyContent = `提示词：${prompt}
+
+JSON示例：
+${exampleJson}`;
+            common_vendor.index.setClipboardData({
+              data: copyContent,
+              success: () => {
+                common_vendor.index.showToast({
+                  title: "已复制",
+                  icon: "none"
+                });
+              }
+            });
+          }
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/setting/index.vue:322", "showModal失败:", err);
+          common_vendor.index.showToast({
+            title: "弹窗打开失败",
+            icon: "none"
+          });
         }
       });
     },
@@ -146,10 +266,10 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     h: common_vendor.o(($event) => $options.toggleSetting("showCost")),
     i: $data.settings.showCostRate,
     j: common_vendor.o(($event) => $options.toggleSetting("showCostRate")),
-    k: $data.settings.darkMode,
-    l: common_vendor.o((...args) => $options.toggleTheme && $options.toggleTheme(...args)),
-    m: common_vendor.o((...args) => $options.exportData && $options.exportData(...args)),
-    n: common_vendor.o((...args) => $options.importData && $options.importData(...args)),
+    k: common_vendor.o((...args) => $options.exportData && $options.exportData(...args)),
+    l: common_vendor.o((...args) => $options.importData && $options.importData(...args)),
+    m: common_vendor.o((...args) => $options.appendData && $options.appendData(...args)),
+    n: common_vendor.o((...args) => $options.showImportTutorial && $options.showImportTutorial(...args)),
     o: common_vendor.o((...args) => $options.logout && $options.logout(...args))
   };
 }
