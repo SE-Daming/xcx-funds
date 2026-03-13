@@ -299,15 +299,35 @@ export default {
 		logout() {
 			uni.showModal({
 				title: '退出登录',
-				content: '确定要退出吗？',
+				content: '确定要退出吗？退出后所有本地数据将被清空。',
 				success: (res) => {
 					if (res.confirm) {
-						// 清除登录状态
-						uni.removeStorageSync('userToken');
-						uni.showToast({
-							title: '已退出',
-							icon: 'success'
-						});
+						// 清除所有本地数据
+						const cleared = DataManager.clearAllData();
+						
+						if (cleared) {
+							uni.showToast({
+								title: '数据已清空',
+								icon: 'success',
+								duration: 1000
+							});
+							
+							// 触发全局事件 (虽然 reLaunch 会重载页面，但为了保险还是触发一下)
+							uni.$emit('fundDeleted');
+							uni.$emit('settingsChanged');
+							
+							// 延迟跳转，确保用户看到提示并让存储操作完成
+							setTimeout(() => {
+								uni.reLaunch({
+									url: '/pages/index/index'
+								});
+							}, 1000);
+						} else {
+							uni.showToast({
+								title: '清空失败',
+								icon: 'none'
+							});
+						}
 					}
 				}
 			});

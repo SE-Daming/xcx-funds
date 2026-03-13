@@ -207,14 +207,29 @@ const _sfc_main = {
     logout() {
       common_vendor.index.showModal({
         title: "退出登录",
-        content: "确定要退出吗？",
+        content: "确定要退出吗？退出后所有本地数据将被清空。",
         success: (res) => {
           if (res.confirm) {
-            common_vendor.index.removeStorageSync("userToken");
-            common_vendor.index.showToast({
-              title: "已退出",
-              icon: "success"
-            });
+            const cleared = utils_dataManager.DataManager.clearAllData();
+            if (cleared) {
+              common_vendor.index.showToast({
+                title: "数据已清空",
+                icon: "success",
+                duration: 1e3
+              });
+              common_vendor.index.$emit("fundDeleted");
+              common_vendor.index.$emit("settingsChanged");
+              setTimeout(() => {
+                common_vendor.index.reLaunch({
+                  url: "/pages/index/index"
+                });
+              }, 1e3);
+            } else {
+              common_vendor.index.showToast({
+                title: "清空失败",
+                icon: "none"
+              });
+            }
           }
         }
       });
