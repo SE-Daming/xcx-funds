@@ -513,7 +513,7 @@ export default {
 						  '2. 发给豆包/DeepSeek，让它按提示词输出JSON\n' +
 						  '3. 复制AI输出的JSON\n' +
 						  '4. 打开“设置”→“新增/导入配置”导入\n\n' +
-						  '提示：cost 请填入手时的单位成本价';
+						  '提示：有任何问题随时联系群主';
 			
 			uni.showModal({
 				title: '一键导入教程',

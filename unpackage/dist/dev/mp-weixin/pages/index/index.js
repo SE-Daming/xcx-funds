@@ -276,7 +276,7 @@ const _sfc_main = {
     }
   ]
 }`;
-      const content = "1. 截图你的基金持仓界面\n2. 发给豆包/DeepSeek，让它按提示词输出JSON\n3. 复制AI输出的JSON\n4. 打开“设置”→“新增/导入配置”导入\n\n提示：cost 请填入手时的单位成本价";
+      const content = "1. 截图你的基金持仓界面\n2. 发给豆包/DeepSeek，让它按提示词输出JSON\n3. 复制AI输出的JSON\n4. 打开“设置”→“新增/导入配置”导入\n\n提示：有任何问题随时联系群主";
       common_vendor.index.showModal({
         title: "一键导入教程",
         content,
