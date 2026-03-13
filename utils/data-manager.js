@@ -106,10 +106,29 @@ export class DataManager {
   static getSettings() {
     try {
       const settings = uni.getStorageSync('fundSettings');
-      return settings || {};
+      const defaultSettings = {
+        showAmount: true,
+        showGains: true,
+        showCost: true,
+        showCostRate: true,
+        showGSZ: true,
+        darkMode: false,
+        sortType: 'gszzl', // 默认按估算收益率排序
+        sortOrder: 'desc'  // 默认降序
+      };
+      return settings ? { ...defaultSettings, ...settings } : defaultSettings;
     } catch (e) {
       console.error('获取设置失败:', e);
-      return {};
+      return {
+        showAmount: true,
+        showGains: true,
+        showCost: true,
+        showCostRate: true,
+        showGSZ: true,
+        darkMode: false,
+        sortType: 'gszzl',
+        sortOrder: 'desc'
+      };
     }
   }
 

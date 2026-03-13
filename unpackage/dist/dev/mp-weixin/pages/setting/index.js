@@ -5,12 +5,14 @@ const _sfc_main = {
   data() {
     return {
       settings: {
-        showAmount: false,
-        showGains: false,
-        showCost: false,
-        showCostRate: false,
-        showGSZ: false,
-        darkMode: false
+        showAmount: true,
+        showGains: true,
+        showCost: true,
+        showCostRate: true,
+        showGSZ: true,
+        darkMode: false,
+        sortType: "gszzl",
+        sortOrder: "desc"
       }
     };
   },
@@ -67,19 +69,36 @@ const _sfc_main = {
               success: (res2) => {
                 try {
                   const importedData = JSON.parse(res2.data);
-                  if (importedData.settings && importedData.fundList !== void 0) {
-                    utils_dataManager.DataManager.saveSettings(importedData.settings);
-                    utils_dataManager.DataManager.saveFundList(importedData.fundList);
-                    this.settings = importedData.settings;
-                    common_vendor.index.showToast({
-                      title: "导入成功",
-                      icon: "success"
-                    });
-                  } else {
-                    throw new Error("配置格式不正确");
+                  let newFunds = [];
+                  let newSettings = null;
+                  if (Array.isArray(importedData)) {
+                    newFunds = importedData;
+                  } else if (importedData && Array.isArray(importedData.fundList)) {
+                    newFunds = importedData.fundList;
+                    if (importedData.settings) {
+                      newSettings = importedData.settings;
+                    }
                   }
+                  if (newFunds.length === 0 && !newSettings) {
+                    throw new Error("未识别到有效的配置或基金列表");
+                  }
+                  const normalizedFundList = newFunds.map((fund) => ({
+                    code: String(fund.code || ""),
+                    name: fund.name || "未知基金",
+                    num: parseFloat(fund.num) || 0,
+                    cost: parseFloat(fund.cost) || 0
+                  })).filter((f) => f.code);
+                  if (newSettings) {
+                    utils_dataManager.DataManager.saveSettings(newSettings);
+                    this.settings = newSettings;
+                  }
+                  utils_dataManager.DataManager.saveFundList(normalizedFundList);
+                  common_vendor.index.showToast({
+                    title: "导入成功",
+                    icon: "success"
+                  });
                 } catch (e) {
-                  common_vendor.index.__f__("error", "at pages/setting/index.vue:151", "导入数据失败:", e);
+                  common_vendor.index.__f__("error", "at pages/setting/index.vue:173", "导入数据失败:", e);
                   common_vendor.index.showToast({
                     title: "导入失败：格式错误",
                     icon: "none"
@@ -130,9 +149,15 @@ const _sfc_main = {
                   let skippedCount = 0;
                   newFunds.forEach((fund) => {
                     if (fund && fund.code) {
-                      if (!existingCodes.has(fund.code)) {
-                        currentFunds.push(fund);
-                        existingCodes.add(fund.code);
+                      const normalizedFund = {
+                        code: String(fund.code),
+                        name: fund.name || "未知基金",
+                        num: parseFloat(fund.num) || 0,
+                        cost: parseFloat(fund.cost) || 0
+                      };
+                      if (!existingCodes.has(normalizedFund.code)) {
+                        currentFunds.push(normalizedFund);
+                        existingCodes.add(normalizedFund.code);
                         addedCount++;
                       } else {
                         skippedCount++;
@@ -155,7 +180,7 @@ const _sfc_main = {
                     });
                   }
                 } catch (e) {
-                  common_vendor.index.__f__("error", "at pages/setting/index.vue:245", "新增配置失败:", e);
+                  common_vendor.index.__f__("error", "at pages/setting/index.vue:275", "新增配置失败:", e);
                   common_vendor.index.showModal({
                     title: "解析失败",
                     content: e.message || "数据格式错误",

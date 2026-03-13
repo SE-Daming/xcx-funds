@@ -265,36 +265,18 @@ const _sfc_main = {
       });
     },
     showImportTutorial() {
-      const prompt = "请识别图片中的基金持仓信息，并输出为如下JSON格式";
+      const prompt = "请识别图片中的基金持仓信息（基金代码、基金名称、持有份额、持仓成本价），并严格按以下 JSON 格式输出，不要包含任何多余文字：";
       const exampleJson = `{
-  "settings": {
-    "showAmount": true,
-    "showGains": true,
-    "showCost": true,
-    "showCostRate": true,
-    "showGSZ": true,
-    "darkMode": false
-  },
   "fundList": [
     {
-      "code": "",
-      "name": "",
-      "num": "",
-      "cost": "",
-      "gsz": 0,
-      "gszzl": 0,
-      "dwjz": 0,
-      "jzrq": "",
-      "gztime": "",
-      "amount": 0,
-      "gains": 0,
-      "costGains": 0,
-      "costGainsRate": ""
+      "code": "000001",
+      "name": "基金名称示例",
+      "num": 1234.56,
+      "cost": 1.0245
     }
-  ],
-  "version": "1.0.0"
+  ]
 }`;
-      const content = "1. 截图你的基金持仓界面\n2. 发给豆包/DeepSeek，让它按提示词输出JSON\n3. 复制AI输出的JSON\n4. 打开“设置”→“新增配置/导入配置”导入\n\n点左下角“复制”可复制提示词+JSON示例";
+      const content = "1. 截图你的基金持仓界面\n2. 发给豆包/DeepSeek，让它按提示词输出JSON\n3. 复制AI输出的JSON\n4. 打开“设置”→“新增/导入配置”导入\n\n提示：cost 请填入手时的单位成本价";
       common_vendor.index.showModal({
         title: "一键导入教程",
         content,
@@ -319,7 +301,7 @@ ${exampleJson}`;
           }
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/index/index.vue:557", "showModal失败:", err);
+          common_vendor.index.__f__("error", "at pages/index/index.vue:539", "showModal失败:", err);
           common_vendor.index.showToast({
             title: "弹窗打开失败",
             icon: "none"
@@ -467,10 +449,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
       } : {}, {
         q: $data.showAmount
       }, $data.showAmount ? {
-        r: common_vendor.t(fund.amount ? fund.amount.toLocaleString("zh", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }) : "--")
+        r: common_vendor.t(fund.amount ? fund.amount.toFixed(2) : "--")
       } : {}, {
         s: $data.showCostRate
       }, $data.showCostRate ? {

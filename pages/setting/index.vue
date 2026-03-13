@@ -57,12 +57,14 @@ export default {
 	data() {
 		return {
 			settings: {
-				showAmount: false,
-				showGains: false,
-				showCost: false,
-				showCostRate: false,
-				showGSZ: false,
-				darkMode: false
+				showAmount: true,
+				showGains: true,
+				showCost: true,
+				showCostRate: true,
+				showGSZ: true,
+				darkMode: false,
+				sortType: 'gszzl',
+				sortOrder: 'desc'
 			}
 		}
 	},
@@ -130,23 +132,43 @@ export default {
 							success: (res) => {
 								try {
 									const importedData = JSON.parse(res.data);
-									
-									// 验证数据格式
-									if (importedData.settings && importedData.fundList !== undefined) {
-										// 保存导入的数据
-										DataManager.saveSettings(importedData.settings);
-										DataManager.saveFundList(importedData.fundList);
-										
-										// 更新当前设置
-										this.settings = importedData.settings;
-										
-										uni.showToast({
-											title: '导入成功',
-											icon: 'success'
-										});
-									} else {
-										throw new Error('配置格式不正确');
+									let newFunds = [];
+									let newSettings = null;
+
+									// 1. 识别并提取基金列表 (支持 {fundList:[]} 或直接是 [])
+									if (Array.isArray(importedData)) {
+										newFunds = importedData;
+									} else if (importedData && Array.isArray(importedData.fundList)) {
+										newFunds = importedData.fundList;
+										if (importedData.settings) {
+											newSettings = importedData.settings;
+										}
 									}
+
+									// 2. 验证是否提取到了有效数据
+									if (newFunds.length === 0 && !newSettings) {
+										throw new Error('未识别到有效的配置或基金列表');
+									}
+
+									// 3. 归一化基金数据
+									const normalizedFundList = newFunds.map(fund => ({
+										code: String(fund.code || ''),
+										name: fund.name || '未知基金',
+										num: parseFloat(fund.num) || 0,
+										cost: parseFloat(fund.cost) || 0
+									})).filter(f => f.code);
+									
+									// 4. 执行导入 (覆盖模式)
+									if (newSettings) {
+										DataManager.saveSettings(newSettings);
+										this.settings = newSettings;
+									}
+									DataManager.saveFundList(normalizedFundList);
+									
+									uni.showToast({
+										title: '导入成功',
+										icon: 'success'
+									});
 								} catch (e) {
 									console.error('导入数据失败:', e);
 									uni.showToast({
@@ -212,9 +234,17 @@ export default {
 									// 遍历新数据并去重追加
 									newFunds.forEach(fund => {
 										if (fund && fund.code) {
-											if (!existingCodes.has(fund.code)) {
-												currentFunds.push(fund);
-												existingCodes.add(fund.code);
+											// 确保数据类型正确
+											const normalizedFund = {
+												code: String(fund.code),
+												name: fund.name || '未知基金',
+												num: parseFloat(fund.num) || 0,
+												cost: parseFloat(fund.cost) || 0
+											};
+											
+											if (!existingCodes.has(normalizedFund.code)) {
+												currentFunds.push(normalizedFund);
+												existingCodes.add(normalizedFund.code);
 												addedCount++;
 											} else {
 												skippedCount++;

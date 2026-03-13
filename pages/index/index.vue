@@ -126,7 +126,7 @@
 					</view>
 					<view class="extra-item" v-if="showAmount">
 						<text class="label">总值</text>
-						<text class="value">{{ fund.amount ? fund.amount.toLocaleString('zh', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--' }}</text>
+						<text class="value">{{ fund.amount ? fund.amount.toFixed(2) : '--' }}</text>
 					</view>
 					<view class="extra-item" v-if="showCostRate">
 						<text class="label">持有收益率</text>
@@ -497,41 +497,23 @@ export default {
 			});
 		},
 		showImportTutorial() {
-			const prompt = '请识别图片中的基金持仓信息，并输出为如下JSON格式';
+			const prompt = '请识别图片中的基金持仓信息（基金代码、基金名称、持有份额、持仓成本价），并严格按以下 JSON 格式输出，不要包含任何多余文字：';
 			const exampleJson = `{
-  "settings": {
-    "showAmount": true,
-    "showGains": true,
-    "showCost": true,
-    "showCostRate": true,
-    "showGSZ": true,
-    "darkMode": false
-  },
   "fundList": [
     {
-      "code": "",
-      "name": "",
-      "num": "",
-      "cost": "",
-      "gsz": 0,
-      "gszzl": 0,
-      "dwjz": 0,
-      "jzrq": "",
-      "gztime": "",
-      "amount": 0,
-      "gains": 0,
-      "costGains": 0,
-      "costGainsRate": ""
+      "code": "000001",
+      "name": "基金名称示例",
+      "num": 1234.56,
+      "cost": 1.0245
     }
-  ],
-  "version": "1.0.0"
+  ]
 }`;
 			
 			const content = '1. 截图你的基金持仓界面\n' +
 						  '2. 发给豆包/DeepSeek，让它按提示词输出JSON\n' +
 						  '3. 复制AI输出的JSON\n' +
-						  '4. 打开“设置”→“新增配置/导入配置”导入\n\n' +
-						  '点左下角“复制”可复制提示词+JSON示例';
+						  '4. 打开“设置”→“新增/导入配置”导入\n\n' +
+						  '提示：cost 请填入手时的单位成本价';
 			
 			uni.showModal({
 				title: '一键导入教程',

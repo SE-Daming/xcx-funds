@@ -92,10 +92,31 @@ class DataManager {
   static getSettings() {
     try {
       const settings = common_vendor.index.getStorageSync("fundSettings");
-      return settings || {};
+      const defaultSettings = {
+        showAmount: true,
+        showGains: true,
+        showCost: true,
+        showCostRate: true,
+        showGSZ: true,
+        darkMode: false,
+        sortType: "gszzl",
+        // 默认按估算收益率排序
+        sortOrder: "desc"
+        // 默认降序
+      };
+      return settings ? { ...defaultSettings, ...settings } : defaultSettings;
     } catch (e) {
-      common_vendor.index.__f__("error", "at utils/data-manager.js:111", "获取设置失败:", e);
-      return {};
+      common_vendor.index.__f__("error", "at utils/data-manager.js:121", "获取设置失败:", e);
+      return {
+        showAmount: true,
+        showGains: true,
+        showCost: true,
+        showCostRate: true,
+        showGSZ: true,
+        darkMode: false,
+        sortType: "gszzl",
+        sortOrder: "desc"
+      };
     }
   }
   /**
@@ -108,7 +129,7 @@ class DataManager {
       common_vendor.index.setStorageSync("fundSettings", settings);
       return true;
     } catch (e) {
-      common_vendor.index.__f__("error", "at utils/data-manager.js:126", "保存设置失败:", e);
+      common_vendor.index.__f__("error", "at utils/data-manager.js:145", "保存设置失败:", e);
       return false;
     }
   }
@@ -125,7 +146,7 @@ class DataManager {
       }
       return deviceId;
     } catch (e) {
-      common_vendor.index.__f__("error", "at utils/data-manager.js:144", "获取设备ID失败:", e);
+      common_vendor.index.__f__("error", "at utils/data-manager.js:163", "获取设备ID失败:", e);
       return this.generateUUID();
     }
   }
@@ -160,7 +181,7 @@ class DataManager {
   static importData(data) {
     try {
       if (!data || typeof data !== "object") {
-        common_vendor.index.__f__("error", "at utils/data-manager.js:182", "无效的导入数据");
+        common_vendor.index.__f__("error", "at utils/data-manager.js:201", "无效的导入数据");
         return false;
       }
       if (data.settings !== void 0) {
@@ -171,7 +192,7 @@ class DataManager {
       }
       return true;
     } catch (e) {
-      common_vendor.index.__f__("error", "at utils/data-manager.js:197", "导入数据失败:", e);
+      common_vendor.index.__f__("error", "at utils/data-manager.js:216", "导入数据失败:", e);
       return false;
     }
   }
@@ -186,7 +207,7 @@ class DataManager {
       common_vendor.index.removeStorageSync("deviceId");
       return true;
     } catch (e) {
-      common_vendor.index.__f__("error", "at utils/data-manager.js:213", "清除数据失败:", e);
+      common_vendor.index.__f__("error", "at utils/data-manager.js:232", "清除数据失败:", e);
       return false;
     }
   }
