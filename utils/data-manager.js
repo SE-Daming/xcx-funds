@@ -178,6 +178,131 @@ export class DataManager {
   }
 
   /**
+   * 获取分组列表
+   * @returns {Array} 分组列表
+   */
+  static getGroupList() {
+    try {
+      const groupList = uni.getStorageSync('groupList');
+      return groupList || [];
+    } catch (e) {
+      console.error('获取分组列表失败:', e);
+      return [];
+    }
+  }
+
+  /**
+   * 保存分组列表
+   * @param {Array} groupList - 分组列表
+   * @returns {Boolean} 保存是否成功
+   */
+  static saveGroupList(groupList) {
+    try {
+      uni.setStorageSync('groupList', groupList);
+      return true;
+    } catch (e) {
+      console.error('保存分组列表失败:', e);
+      return false;
+    }
+  }
+
+  /**
+   * 添加分组
+   * @param {Object} group - 分组对象 { name, order }
+   * @returns {Object|null} 添加成功返回分组对象，失败返回 null
+   */
+  static addGroup(group) {
+    try {
+      const groupList = this.getGroupList();
+      const newGroup = {
+        id: 'group_' + Date.now(),
+        name: group.name,
+        order: groupList.length
+      };
+      groupList.push(newGroup);
+      uni.setStorageSync('groupList', groupList);
+      return newGroup;
+    } catch (e) {
+      console.error('添加分组失败:', e);
+      return null;
+    }
+  }
+
+  /**
+   * 更新分组
+   * @param {string} groupId - 分组ID
+   * @param {Object} updateData - 更新的数据
+   * @returns {Boolean} 更新是否成功
+   */
+  static updateGroup(groupId, updateData) {
+    try {
+      const groupList = this.getGroupList();
+      const groupIndex = groupList.findIndex(item => item.id === groupId);
+
+      if (groupIndex === -1) {
+        return false;
+      }
+
+      groupList[groupIndex] = { ...groupList[groupIndex], ...updateData };
+      uni.setStorageSync('groupList', groupList);
+      return true;
+    } catch (e) {
+      console.error('更新分组失败:', e);
+      return false;
+    }
+  }
+
+  /**
+   * 删除分组
+   * @param {string} groupId - 分组ID
+   * @returns {Boolean} 删除是否成功
+   */
+  static removeGroup(groupId) {
+    try {
+      const groupList = this.getGroupList();
+      const filteredList = groupList.filter(item => item.id !== groupId);
+      uni.setStorageSync('groupList', filteredList);
+
+      // 同时清除该分组下基金的 groupId
+      const fundList = this.getFundList();
+      fundList.forEach(fund => {
+        if (fund.groupId === groupId) {
+          fund.groupId = '';
+        }
+      });
+      this.saveFundList(fundList);
+
+      return true;
+    } catch (e) {
+      console.error('删除分组失败:', e);
+      return false;
+    }
+  }
+
+  /**
+   * 更新分组排序
+   * @param {Array} orderedIds - 排序后的分组ID数组
+   * @returns {Boolean} 更新是否成功
+   */
+  static reorderGroups(orderedIds) {
+    try {
+      const groupList = this.getGroupList();
+      const reorderedList = [];
+      orderedIds.forEach((id, index) => {
+        const group = groupList.find(g => g.id === id);
+        if (group) {
+          reorderedList.push({ ...group, order: index });
+        }
+      });
+      uni.setStorageSync('groupList', reorderedList);
+      return true;
+    } catch (e) {
+      console.error('更新分组排序失败:', e);
+      return false;
+    }
+  }
+
+  /**
    * 导出数据
    * @returns {Object} 导出的数据对象
    */
@@ -185,6 +310,7 @@ export class DataManager {
     return {
       settings: this.getSettings(),
       fundList: this.getFundList(),
+      groupList: this.getGroupList(),
       version: '1.0.0',
       exportTime: new Date().toISOString()
     };
@@ -206,9 +332,13 @@ export class DataManager {
       if (data.settings !== undefined) {
         this.saveSettings(data.settings);
       }
-      
+
       if (data.fundList !== undefined) {
         this.saveFundList(data.fundList);
+      }
+
+      if (data.groupList !== undefined) {
+        this.saveGroupList(data.groupList);
       }
 
       return true;
@@ -227,6 +357,7 @@ export class DataManager {
       uni.removeStorageSync('fundList');
       uni.removeStorageSync('fundSettings');
       uni.removeStorageSync('deviceId');
+      uni.removeStorageSync('groupList');
       return true;
     } catch (e) {
       console.error('清除数据失败:', e);

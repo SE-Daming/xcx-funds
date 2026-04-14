@@ -4,48 +4,59 @@
 			<view class="fund-name">{{ fund.name }}</view>
 			<view class="fund-code">{{ fund.code }}</view>
 		</view>
-		
+
 		<view class="form-section">
 			<view class="form-item">
 				<view class="label">持有数量</view>
-				<input 
-					class="input" 
-					type="digit" 
-					placeholder="请输入持有数量" 
+				<input
+					class="input"
+					type="digit"
+					placeholder="请输入持有数量"
 					v-model="formData.num"
 					@blur="calculateAmount"
 				/>
 			</view>
-			
+
 			<view class="form-item">
 				<view class="label">入手单价</view>
-				<input 
-					class="input" 
-					type="digit" 
-					placeholder="请输入入手单价" 
+				<input
+					class="input"
+					type="digit"
+					placeholder="请输入入手单价"
 					v-model="formData.cost"
 					@blur="calculateHoldGains"
 				/>
 			</view>
-			
+
+			<!-- 分组选择 -->
+			<view class="form-item">
+				<view class="label">所属分组</view>
+				<picker mode="selector" :range="groupPickerRange" :value="selectedGroupIndex" @change="onGroupChange">
+					<view class="group-picker">
+						<text class="group-value">{{ selectedGroupName }}</text>
+						<text class="arrow">▾</text>
+					</view>
+				</picker>
+			</view>
+
 			<view class="form-item" v-if="formData.num && formData.cost">
 				<view class="label">持有总值</view>
 				<view class="readonly-value">{{ calculatedAmount }}</view>
 			</view>
-			
+
 			<view class="form-item" v-if="calculatedHoldGains !== null">
 				<view class="label">当前变动</view>
 				<view class="readonly-value" :class="{'red': calculatedHoldGains >= 0, 'green': calculatedHoldGains < 0}">
 					{{ calculatedHoldGains >= 0 ? '+' : '' }}{{ calculatedHoldGains }}
 				</view>
 			</view>
-			
+
 			<!-- 显示当前净值信息 -->
 			<view class="form-item" v-if="fund.gsz">
 				<view class="label">当前预估单价</view>
 				<view class="readonly-value">{{ fund.gsz }}</view>
 			</view>
-			
+
 			<view class="form-item" v-if="fund.gszzl">
 				<view class="label">预估波动</view>
 				<view class="readonly-value" :class="{'red': fund.gszzl >= 0, 'green': fund.gszzl < 0}">
@@ -53,7 +64,7 @@
 				</view>
 			</view>
 		</view>
-		
+
 		<view class="action-buttons">
 			<button class="btn cancel-btn" @click="cancel">取消</button>
 			<button class="btn save-btn" @click="save">保存</button>
@@ -84,15 +95,36 @@ export default {
 			},
 			calculatedAmount: null,
 			calculatedHoldGains: null,
-			deviceId: ''
+			deviceId: '',
+			groupList: [],
+			selectedGroupIndex: 0
+		}
+	},
+	computed: {
+		groupPickerRange() {
+			return ['不选择分组', ...this.groupList.map(g => g.name)];
+		},
+		selectedGroupName() {
+			return this.groupPickerRange[this.selectedGroupIndex] || '不选择分组';
+		},
+		selectedGroupId() {
+			if (this.selectedGroupIndex === 0) return '';
+			return this.groupList[this.selectedGroupIndex - 1]?.id || '';
 		}
 	},
 	onLoad(options) {
 		this.fundCode = options.code;
 		this.loadDeviceId();
+		this.loadGroupList();
 		this.loadFundDetail();
 	},
 	methods: {
+		loadGroupList() {
+			this.groupList = DataManager.getGroupList();
+		},
+		onGroupChange(e) {
+			this.selectedGroupIndex = parseInt(e.detail.value);
+		},
 		loadDeviceId() {
 			// 获取或生成设备ID
 			let deviceId = uni.getStorageSync('deviceId');
@@ -114,19 +146,25 @@ export default {
 			uni.showLoading({
 				title: '加载中...'
 			});
-			
+
 			try {
 				// 从本地存储获取基金详情
 				const fundList = DataManager.getFundList();
 				const localFund = fundList.find(item => item.code === this.fundCode);
-				
+
+				// 初始化分组选择
+				if (localFund && localFund.groupId) {
+					const groupIndex = this.groupList.findIndex(g => g.id === localFund.groupId);
+					this.selectedGroupIndex = groupIndex >= 0 ? groupIndex + 1 : 0;
+				}
+
 				// 从API获取基金实时数据
 				const result = await getFundData([this.fundCode], this.deviceId);
 				const apiData = result.Datas || [];
-				
+
 				if (apiData.length > 0) {
 					const apiFund = apiData[0];
-					
+
 					// 合并API数据和本地数据
 					this.fund = {
 						code: apiFund.fundcode,
@@ -135,9 +173,10 @@ export default {
 						gsz: apiFund.gsz,
 						gszzl: apiFund.gszzl,
 						num: localFund ? localFund.num : '',
-						cost: localFund ? localFund.cost : ''
+						cost: localFund ? localFund.cost : '',
+						groupId: localFund ? localFund.groupId : ''
 					};
-					
+
 					// 初始化表单数据
 					this.formData = {
 						num: localFund ? localFund.num : '',
@@ -186,7 +225,7 @@ export default {
 				const currentPrice = this.fund.gsz || this.fund.dwjz || 1;
 				const cost = parseFloat(this.formData.cost);
 				const num = parseFloat(this.formData.num);
-				
+
 				if (!isNaN(currentPrice) && !isNaN(cost) && !isNaN(num)) {
 					const gains = (currentPrice - cost) * num;
 					this.calculatedHoldGains = gains ? gains.toFixed(2) : null;
@@ -200,23 +239,24 @@ export default {
 			if (!this.validateForm()) {
 				return;
 			}
-			
+
 			// 更新本地存储中的基金信息
 			const updateData = {
 				num: this.formData.num,
-				cost: this.formData.cost
+				cost: this.formData.cost,
+				groupId: this.selectedGroupId
 			};
-							
+
 			DataManager.updateFund(this.fundCode, updateData);
-			
+
 			uni.showToast({
 				title: '保存成功',
 				icon: 'success'
 			});
-			
+
 			// 触发全局事件，通知主页面刷新数据
 			uni.$emit('fundUpdated', { fundCode: this.fundCode });
-			
+
 			// 延迟返回，让用户看到成功提示
 			setTimeout(() => {
 				uni.navigateBack();
@@ -302,6 +342,26 @@ export default {
 
 .form-section .form-item .readonly-value.green {
 	color: #2ed573;
+}
+
+/* 分组选择器样式 */
+.form-section .form-item .group-picker {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 20rpx;
+	background-color: #f8f9fa;
+	border-radius: 8rpx;
+
+	.group-value {
+		font-size: 28rpx;
+		color: #333;
+	}
+
+	.arrow {
+		color: #999;
+		font-size: 24rpx;
+	}
 }
 
 .action-buttons {

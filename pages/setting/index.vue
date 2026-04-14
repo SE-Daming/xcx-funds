@@ -23,7 +23,7 @@
 				<switch class="setting-switch" :checked="settings.showCostRate" @change="toggleSetting('showCostRate')" />
 			</view>
 		</view>
-		
+
 		<view class="setting-section">
 			<view class="section-title">数据管理</view>
 			<view class="setting-item" @click="exportData">
@@ -43,7 +43,7 @@
 				<view class="setting-arrow">></view>
 			</view>
 		</view>
-		
+
 		<view class="logout-section">
 			<button class="logout-btn" @click="logout">退出登录</button>
 		</view>
@@ -73,7 +73,6 @@ export default {
 	},
 	methods: {
 		loadSettings() {
-			// 从本地存储加载设置
 			const savedSettings = DataManager.getSettings();
 			if (savedSettings) {
 				this.settings = { ...this.settings, ...savedSettings };
@@ -84,29 +83,18 @@ export default {
 			this.saveSettings();
 		},
 		saveSettings() {
-			// 保存设置
 			DataManager.saveSettings(this.settings);
-			
-			// 通知其他页面更新设置
 			uni.$emit('settingsChanged', this.settings);
 		},
 		exportData() {
-			// 导出数据逻辑
 			uni.showModal({
 				title: '导出配置',
 				content: '确定要导出配置数据吗？',
 				success: (res) => {
 					if (res.confirm) {
-						// 获取所有数据
-						const allData = {
-							settings: this.settings,
-							fundList: DataManager.getFundList(),
-							version: '1.0.0'
-						};
-						
-						// 转换为JSON字符串
+						const allData = DataManager.exportData();
 						const dataStr = JSON.stringify(allData, null, 2);
-						
+
 						uni.setClipboardData({
 							data: dataStr,
 							success: () => {
@@ -121,50 +109,56 @@ export default {
 			});
 		},
 		importData() {
-			// 导入数据逻辑
 			uni.showModal({
 				title: '导入配置',
 				content: '请确保已将配置数据复制到剪贴板',
 				success: (res) => {
 					if (res.confirm) {
-						// 从剪贴板获取数据
 						uni.getClipboardData({
 							success: (res) => {
 								try {
 									const importedData = JSON.parse(res.data);
 									let newFunds = [];
 									let newSettings = null;
+									let newGroups = [];
 
-									// 1. 识别并提取基金列表 (支持 {fundList:[]} 或直接是 [])
 									if (Array.isArray(importedData)) {
 										newFunds = importedData;
-									} else if (importedData && Array.isArray(importedData.fundList)) {
-										newFunds = importedData.fundList;
+									} else if (importedData && typeof importedData === 'object') {
+										if (Array.isArray(importedData.fundList)) {
+											newFunds = importedData.fundList;
+										}
 										if (importedData.settings) {
 											newSettings = importedData.settings;
 										}
+										if (Array.isArray(importedData.groupList)) {
+											newGroups = importedData.groupList;
+										}
 									}
 
-									// 2. 验证是否提取到了有效数据
-									if (newFunds.length === 0 && !newSettings) {
-										throw new Error('未识别到有效的配置或基金列表');
+									if (newFunds.length === 0 && !newSettings && newGroups.length === 0) {
+										throw new Error('未识别到有效的配置数据');
 									}
 
-									// 3. 归一化基金数据
 									const normalizedFundList = newFunds.map(fund => ({
 										code: String(fund.code || ''),
 										name: fund.name || '未知基金',
 										num: parseFloat(fund.num) || 0,
-										cost: parseFloat(fund.cost) || 0
+										cost: parseFloat(fund.cost) || 0,
+										groupId: fund.groupId || ''
 									})).filter(f => f.code);
-									
-									// 4. 执行导入 (覆盖模式)
+
 									if (newSettings) {
 										DataManager.saveSettings(newSettings);
 										this.settings = newSettings;
 									}
-									DataManager.saveFundList(normalizedFundList);
-									
+									if (normalizedFundList.length > 0) {
+										DataManager.saveFundList(normalizedFundList);
+									}
+									if (newGroups.length > 0) {
+										DataManager.saveGroupList(newGroups);
+									}
+
 									uni.showToast({
 										title: '导入成功',
 										icon: 'success'
@@ -189,7 +183,6 @@ export default {
 			});
 		},
 		appendData() {
-			// 新增配置逻辑（追加模式）
 			uni.showModal({
 				title: '新增配置',
 				content: '请确保已将配置数据（JSON格式）复制到剪贴板，新数据将追加到现有列表中。',
@@ -200,48 +193,42 @@ export default {
 								try {
 									let newFunds = [];
 									let importedData = null;
-									
-									// 尝试解析JSON
+
 									try {
 										importedData = JSON.parse(res.data);
 									} catch(e) {
 										throw new Error('剪贴板内容不是有效的JSON格式');
 									}
 
-									// 识别数据格式
 									if (Array.isArray(importedData)) {
-										// 格式：[...]
 										newFunds = importedData;
 									} else if (importedData && Array.isArray(importedData.fundList)) {
-										// 格式：{ fundList: [...], ... }
 										newFunds = importedData.fundList;
 									} else {
 										throw new Error('未识别到有效的基金列表数据');
 									}
-									
+
 									if (newFunds.length === 0) {
 										uni.showToast({ title: '没有包含任何基金数据', icon: 'none' });
 										return;
 									}
 
-									// 获取现有列表
 									const currentFunds = DataManager.getFundList();
 									const existingCodes = new Set(currentFunds.map(f => f.code));
-									
+
 									let addedCount = 0;
 									let skippedCount = 0;
-									
-									// 遍历新数据并去重追加
+
 									newFunds.forEach(fund => {
 										if (fund && fund.code) {
-											// 确保数据类型正确
 											const normalizedFund = {
 												code: String(fund.code),
 												name: fund.name || '未知基金',
 												num: parseFloat(fund.num) || 0,
-												cost: parseFloat(fund.cost) || 0
+												cost: parseFloat(fund.cost) || 0,
+												groupId: fund.groupId || ''
 											};
-											
+
 											if (!existingCodes.has(normalizedFund.code)) {
 												currentFunds.push(normalizedFund);
 												existingCodes.add(normalizedFund.code);
@@ -251,13 +238,11 @@ export default {
 											}
 										}
 									});
-									
+
 									if (addedCount > 0) {
-										// 保存更新后的列表
 										DataManager.saveFundList(currentFunds);
-										// 通知更新
-										uni.$emit('fundAdded', {}); 
-										
+										uni.$emit('fundAdded', {});
+
 										uni.showModal({
 											title: '新增成功',
 											content: `成功添加 ${addedCount} 个基金，跳过 ${skippedCount} 个已存在的基金。`,
@@ -270,7 +255,7 @@ export default {
 											showCancel: false
 										});
 									}
-									
+
 								} catch (e) {
 									console.error('新增配置失败:', e);
 									uni.showModal({
@@ -302,21 +287,18 @@ export default {
 				content: '确定要退出吗？退出后所有本地数据将被清空。',
 				success: (res) => {
 					if (res.confirm) {
-						// 清除所有本地数据
 						const cleared = DataManager.clearAllData();
-						
+
 						if (cleared) {
 							uni.showToast({
 								title: '数据已清空',
 								icon: 'success',
 								duration: 1000
 							});
-							
-							// 触发全局事件 (虽然 reLaunch 会重载页面，但为了保险还是触发一下)
+
 							uni.$emit('fundDeleted');
 							uni.$emit('settingsChanged');
-							
-							// 延迟跳转，确保用户看到提示并让存储操作完成
+
 							setTimeout(() => {
 								uni.reLaunch({
 									url: '/pages/index/index'

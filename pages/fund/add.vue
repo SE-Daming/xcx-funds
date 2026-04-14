@@ -2,17 +2,17 @@
 	<view class="add-fund-container">
 		<view class="search-section">
 			<view class="search-input-container">
-				<input 
-					class="search-input" 
-					v-model="searchKeyword" 
-					placeholder="请输入藏品编号或名称" 
+				<input
+					class="search-input"
+					v-model="searchKeyword"
+					placeholder="请输入藏品编号或名称"
 					@input="searchFunds"
 					@confirm="handleSearch"
 				/>
 				<button class="search-btn" @click="handleSearch">搜索</button>
 			</view>
 		</view>
-		
+
 		<view class="result-section" v-if="searchResults.length > 0">
 			<view class="result-item" v-for="(fund, index) in searchResults" :key="index" @click="selectFund(fund)">
 				<view class="fund-info">
@@ -22,7 +22,7 @@
 				<view class="select-btn">选择</view>
 			</view>
 		</view>
-		
+
 		<view class="selected-section" v-if="selectedFunds.length > 0">
 			<view class="section-title">已选择 ({{ selectedFunds.length }})</view>
 			<view class="selected-item" v-for="(fund, index) in selectedFunds" :key="index">
@@ -33,7 +33,18 @@
 				<view class="remove-btn" @click="removeFund(index)">移除</view>
 			</view>
 		</view>
-		
+
+		<!-- 分组选择 -->
+		<view class="group-section" v-if="selectedFunds.length > 0">
+			<view class="section-title">选择分组（可选）</view>
+			<picker mode="selector" :range="groupPickerRange" :value="selectedGroupIndex" @change="onGroupChange">
+				<view class="group-picker">
+					<text class="group-value">{{ selectedGroupName }}</text>
+					<text class="arrow">▾</text>
+				</view>
+			</picker>
+		</view>
+
 		<view class="action-section" v-if="selectedFunds.length > 0">
 			<button class="submit-btn" @click="addSelectedFunds">添加选中藏品 ({{ selectedFunds.length }})</button>
 		</view>
@@ -49,17 +60,43 @@ export default {
 		return {
 			searchKeyword: '',
 			searchResults: [],
-			selectedFunds: []
+			selectedFunds: [],
+			groupList: [],
+			selectedGroupIndex: 0
 		}
 	},
+	computed: {
+		groupPickerRange() {
+			return ['不选择分组', ...this.groupList.map(g => g.name)];
+		},
+		selectedGroupName() {
+			return this.groupPickerRange[this.selectedGroupIndex] || '不选择分组';
+		},
+		selectedGroupId() {
+			if (this.selectedGroupIndex === 0) return '';
+			return this.groupList[this.selectedGroupIndex - 1]?.id || '';
+		}
+	},
+	onLoad() {
+		this.loadGroupList();
+	},
+	onShow() {
+		this.loadGroupList();
+	},
 	methods: {
+		loadGroupList() {
+			this.groupList = DataManager.getGroupList();
+		},
+		onGroupChange(e) {
+			this.selectedGroupIndex = parseInt(e.detail.value);
+		},
 		async searchFunds(e) {
 			const keyword = e.detail.value.trim();
 			if (!keyword) {
 				this.searchResults = [];
 				return;
 			}
-			
+
 			try {
 				// 调用API搜索基金
 				const results = await searchFundsAPI(keyword);
@@ -75,7 +112,7 @@ export default {
 		async handleSearch() {
 			const keyword = this.searchKeyword.trim();
 			if (!keyword) return;
-			
+
 			try {
 				// 调用API搜索基金
 				const results = await searchFundsAPI(keyword);
@@ -111,10 +148,10 @@ export default {
 				});
 				return;
 			}
-			
+
 			// 获取现有基金列表
 			const existingFunds = DataManager.getFundList();
-			
+
 			// 检查是否有重复的基金
 			const newFunds = [];
 			this.selectedFunds.forEach(selectedFund => {
@@ -124,11 +161,12 @@ export default {
 						code: selectedFund.code,
 						name: selectedFund.name,
 						num: 0, // 默认持有份额为0
-						cost: 0 // 默认持仓成本为0
+						cost: 0, // 默认持仓成本为0
+						groupId: this.selectedGroupId // 添加分组ID
 					});
 				}
 			});
-			
+
 			if (newFunds.length === 0) {
 				uni.showToast({
 					title: '所选藏品已在列表中',
@@ -136,29 +174,29 @@ export default {
 				});
 				return;
 			}
-			
+
 			// 添加新基金到现有列表
 			newFunds.forEach(fund => {
 				DataManager.addFund(fund);
 			});
-			
+
 			uni.showLoading({
 				title: '添加中...'
 			});
-			
+
 			setTimeout(() => {
 				uni.hideLoading();
 				uni.showToast({
 					title: `成功添加${newFunds.length}件藏品`,
 					icon: 'success'
 				});
-				
+
 				// 触发全局事件，通知主页面刷新数据
 				uni.$emit('fundAdded', { count: newFunds.length });
-				
+
 				// 清空已选基金
 				this.selectedFunds = [];
-				
+
 				// 返回上一页
 				setTimeout(() => {
 					uni.navigateBack();
@@ -174,6 +212,7 @@ export default {
 	padding: 20rpx;
 	background-color: #f5f5f5;
 	min-height: 100vh;
+	padding-bottom: 140rpx;
 }
 
 .search-section {
@@ -295,6 +334,39 @@ export default {
 	color: #fff;
 	border-radius: 5rpx;
 	font-size: 26rpx;
+}
+
+/* 分组选择样式 */
+.group-section {
+	background-color: #fff;
+	border-radius: 10rpx;
+	padding: 20rpx;
+	margin-bottom: 20rpx;
+
+	.section-title {
+		font-size: 32rpx;
+		font-weight: bold;
+		margin-bottom: 20rpx;
+	}
+
+	.group-picker {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 20rpx;
+		background-color: #f8f9fa;
+		border-radius: 8rpx;
+
+		.group-value {
+			font-size: 28rpx;
+			color: #333;
+		}
+
+		.arrow {
+			color: #999;
+			font-size: 24rpx;
+		}
+	}
 }
 
 .action-section {
