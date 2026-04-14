@@ -347,12 +347,36 @@ export default {
 					const group = this.groupList.find(g => g.id === id);
 					return group ? group.name : '';
 				}).filter(name => name);
-				return names.join('、');
+
+				if (names.length === 0) return '';
+
+				// 单个名称最多显示5个字符
+				const maxLen = 5;
+				const truncatedNames = names.map(name => {
+					if (name.length > maxLen) {
+						return name.substring(0, maxLen) + '...';
+					}
+					return name;
+				});
+
+				// 最多显示2个分组名
+				if (truncatedNames.length <= 2) {
+					return truncatedNames.join('、');
+				} else {
+					return truncatedNames.slice(0, 2).join('、') + '等' + truncatedNames.length + '个';
+				}
 			}
 			// 兼容旧数据
 			if (fund.groupId) {
 				const group = this.groupList.find(g => g.id === fund.groupId);
-				return group ? group.name : '';
+				if (group) {
+					const name = group.name;
+					// 单个名称最多显示5个字符
+					if (name.length > 5) {
+						return name.substring(0, 5) + '...';
+					}
+					return name;
+				}
 			}
 			return '';
 		},
