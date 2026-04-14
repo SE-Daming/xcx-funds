@@ -38,26 +38,6 @@
 			</view>
 		</view>
 
-		<!-- 分组标签栏 -->
-		<scroll-view class="group-tabs" scroll-x>
-			<view class="tab-item" :class="{ 'active': currentGroupId === '' }" @click="selectGroup('')">
-				<text>全部</text>
-				<text class="count">{{ allFundList.length }}</text>
-			</view>
-			<view class="tab-item" v-for="group in groupList" :key="group.id"
-				:class="{ 'active': currentGroupId === group.id }" @click="selectGroup(group.id)">
-				<text>{{ group.name }}</text>
-				<text class="count">{{ getGroupFundCount(group.id) }}</text>
-			</view>
-		</scroll-view>
-
-		<!-- 分组管理入口 -->
-		<view class="group-manage-bar" @click="goToGroupManage">
-			<text class="manage-text">分组管理</text>
-			<text class="manage-count">共{{ groupList.length }}个分组</text>
-			<text class="arrow">›</text>
-		</view>
-
 		<!-- 顶部快捷操作栏 -->
 		<view class="action-bar">
 			<view class="action-item" @click="goToAddFund">
@@ -85,6 +65,26 @@
 				<text class="label">设置</text>
 			</view>
 		</view>
+
+		<!-- 分组管理入口 -->
+		<view class="group-manage-bar" @click="goToGroupManage">
+			<text class="manage-text">分组管理</text>
+			<text class="manage-count">共{{ groupList.length }}个分组</text>
+			<text class="arrow">›</text>
+		</view>
+
+		<!-- 分组标签栏 -->
+		<scroll-view class="group-tabs" scroll-x>
+			<view class="tab-item" :class="{ 'active': currentGroupId === '' }" @click="selectGroup('')">
+				<text>全部</text>
+				<text class="count">{{ allFundList.length }}</text>
+			</view>
+			<view class="tab-item" v-for="group in groupList" :key="group.id"
+				:class="{ 'active': currentGroupId === group.id }" @click="selectGroup(group.id)">
+				<text>{{ group.name }}</text>
+				<text class="count">{{ getGroupFundCount(group.id) }}</text>
+			</view>
+		</scroll-view>
 
 		<!-- 基金列表 -->
 		<view class="fund-list">
