@@ -89,6 +89,27 @@
 .form-section .form-item .readonly-value.green {
   color: #2ed573;
 }
+
+/* 分组选择样式 */
+.form-section .form-item .group-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.form-section .form-item .group-tags .group-tag {
+  padding: 16rpx 28rpx;
+  background-color: #f5f5f5;
+  border-radius: 30rpx;
+  font-size: 26rpx;
+  color: #666;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+}
+.form-section .form-item .group-tags .group-tag.active {
+  background-color: #e8f4fd;
+  color: #3498db;
+  border-color: #3498db;
+}
 .action-buttons {
   display: flex;
   gap: 20rpx;

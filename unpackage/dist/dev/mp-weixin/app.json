@@ -5,7 +5,8 @@
     "pages/fund/edit",
     "pages/fund/add",
     "pages/market/index",
-    "pages/setting/index"
+    "pages/setting/index",
+    "pages/group/index"
   ],
   "window": {
     "navigationBarTextStyle": "black",

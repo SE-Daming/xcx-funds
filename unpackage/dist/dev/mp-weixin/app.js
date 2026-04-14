@@ -8,6 +8,7 @@ if (!Math) {
   "./pages/fund/add.js";
   "./pages/market/index.js";
   "./pages/setting/index.js";
+  "./pages/group/index.js";
 }
 const _sfc_main = {
   onLaunch: function() {

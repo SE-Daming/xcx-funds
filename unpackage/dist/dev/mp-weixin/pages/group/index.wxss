@@ -1,0 +1,306 @@
+/**
+ * 这里是uni-app内置的常用样式变量
+ *
+ * uni-app 官方扩展插件及插件市场（https://ext.dcloud.net.cn）上很多三方插件均使用了这些样式变量
+ * 如果你是插件开发者，建议你使用scss预处理，并在插件代码中直接使用这些变量（无需 import 这个文件），方便用户通过搭积木的方式开发整体风格一致的App
+ *
+ */
+/**
+ * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能
+ *
+ * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
+ */
+/* 颜色变量 */
+/* 行为相关颜色 */
+/* 文字基本颜色 */
+/* 背景颜色 */
+/* 边框颜色 */
+/* 尺寸变量 */
+/* 文字尺寸 */
+/* 图片尺寸 */
+/* Border Radius */
+/* 水平间距 */
+/* 垂直间距 */
+/* 透明度 */
+/* 文章场景相关 */
+/* 自定义金融相关颜色 */
+/* 涨 - 红 */
+/* 跌 - 绿 */
+/* 平 - 灰 */
+/* 自定义卡片样式 */
+.group-container {
+  padding: 20rpx;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding-bottom: 140rpx;
+}
+.group-list {
+  background-color: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+.group-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.group-item:last-child {
+  border-bottom: none;
+}
+.checkbox {
+  width: 44rpx;
+  height: 44rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 50%;
+  margin-right: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.checkbox.checked {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+  color: #fff;
+  font-size: 24rpx;
+}
+.group-info {
+  flex: 1;
+}
+.group-info .group-name {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+  display: block;
+  margin-bottom: 6rpx;
+}
+.group-info .group-count {
+  font-size: 24rpx;
+  color: #999;
+}
+.group-actions {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.group-actions .action-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+.group-actions .action-btn.move-up, .group-actions .action-btn.move-down {
+  background-color: #f5f5f5;
+  color: #666;
+}
+.group-actions .action-btn.add-fund {
+  background-color: #e8f4fd;
+  color: #3498db;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.group-actions .action-btn.remove-fund {
+  background-color: #fef0f0;
+  color: #e74c3c;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+.empty-state .empty-text {
+  font-size: 32rpx;
+  color: #999;
+  margin-bottom: 16rpx;
+}
+.empty-state .empty-hint {
+  font-size: 26rpx;
+  color: #bbb;
+}
+
+/* 底部操作栏 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  border-top: 1rpx solid #eee;
+  padding: 20rpx 30rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.batch-actions .selected-count {
+  font-size: 28rpx;
+  color: #666;
+}
+.batch-actions .btn-delete {
+  padding: 16rpx 32rpx;
+  background-color: #e74c3c;
+  color: #fff;
+  border-radius: 32rpx;
+  font-size: 28rpx;
+}
+.add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 40rpx;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: #fff;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  margin-left: auto;
+}
+.add-btn .icon {
+  font-size: 36rpx;
+  margin-right: 8rpx;
+}
+
+/* 弹窗样式 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  width: 600rpx;
+  background-color: #fff;
+  border-radius: 20rpx;
+  overflow: hidden;
+}
+.add-fund-modal {
+  width: 650rpx;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.modal-title {
+  padding: 36rpx;
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+  border-bottom: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
+}
+.modal-body {
+  padding: 30rpx;
+  flex: 1;
+  overflow-y: auto;
+}
+.modal-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  box-sizing: border-box;
+}
+.modal-input:focus {
+  border-color: #3498db;
+}
+.modal-footer {
+  display: flex;
+  border-top: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
+}
+.modal-btn {
+  flex: 1;
+  height: 100rpx;
+  line-height: 100rpx;
+  text-align: center;
+  font-size: 32rpx;
+  background-color: #fff;
+  border: none;
+  border-radius: 0;
+}
+.modal-btn::after {
+  border: none;
+}
+.modal-btn.cancel {
+  color: #999;
+  border-right: 1rpx solid #f0f0f0;
+}
+.modal-btn.confirm {
+  color: #3498db;
+  font-weight: 500;
+}
+.modal-btn.confirm.remove {
+  color: #e74c3c;
+}
+
+/* 藏品选择列表 */
+.fund-select-list {
+  max-height: 500rpx;
+  overflow-y: auto;
+}
+.fund-select-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+  background-color: #f8f9fa;
+  transition: all 0.2s;
+}
+.fund-select-item:last-child {
+  margin-bottom: 0;
+}
+.fund-select-item.selected {
+  background-color: #e8f4fd;
+}
+.fund-select-item.selected .fund-checkbox {
+  background-color: #3498db;
+  border-color: #3498db;
+  color: #fff;
+}
+.fund-select-item .fund-checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 50%;
+  margin-right: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  flex-shrink: 0;
+}
+.fund-select-item .fund-info {
+  flex: 1;
+}
+.fund-select-item .fund-info .fund-name {
+  font-size: 28rpx;
+  color: #333;
+  display: block;
+  margin-bottom: 4rpx;
+}
+.fund-select-item .fund-info .fund-code {
+  font-size: 24rpx;
+  color: #999;
+}

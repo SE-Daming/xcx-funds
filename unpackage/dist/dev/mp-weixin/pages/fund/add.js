@@ -7,10 +7,33 @@ const _sfc_main = {
     return {
       searchKeyword: "",
       searchResults: [],
-      selectedFunds: []
+      selectedFunds: [],
+      groupList: [],
+      selectedGroupIds: []
     };
   },
+  onLoad() {
+    this.loadGroupList();
+  },
+  onShow() {
+    this.loadGroupList();
+  },
   methods: {
+    loadGroupList() {
+      this.groupList = utils_dataManager.DataManager.getGroupList();
+    },
+    toggleGroup(groupId) {
+      if (groupId === "") {
+        this.selectedGroupIds = [];
+      } else {
+        const index = this.selectedGroupIds.indexOf(groupId);
+        if (index > -1) {
+          this.selectedGroupIds.splice(index, 1);
+        } else {
+          this.selectedGroupIds.push(groupId);
+        }
+      }
+    },
     async searchFunds(e) {
       const keyword = e.detail.value.trim();
       if (!keyword) {
@@ -21,7 +44,7 @@ const _sfc_main = {
         const results = await utils_fundApi.searchFunds(keyword);
         this.searchResults = results.slice(0, 10);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/fund/add.vue:68", "搜索基金失败:", error);
+        common_vendor.index.__f__("error", "at pages/fund/add.vue:106", "搜索基金失败:", error);
         common_vendor.index.showToast({
           title: "搜索失败",
           icon: "none"
@@ -36,7 +59,7 @@ const _sfc_main = {
         const results = await utils_fundApi.searchFunds(keyword);
         this.searchResults = results.slice(0, 10);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/fund/add.vue:84", "搜索基金失败:", error);
+        common_vendor.index.__f__("error", "at pages/fund/add.vue:122", "搜索基金失败:", error);
         common_vendor.index.showToast({
           title: "搜索失败",
           icon: "none"
@@ -75,8 +98,10 @@ const _sfc_main = {
             name: selectedFund.name,
             num: 0,
             // 默认持有份额为0
-            cost: 0
+            cost: 0,
             // 默认持仓成本为0
+            groupIds: [...this.selectedGroupIds]
+            // 添加分组ID数组
           });
         }
       });
@@ -139,8 +164,21 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   } : {}, {
     j: $data.selectedFunds.length > 0
   }, $data.selectedFunds.length > 0 ? {
-    k: common_vendor.t($data.selectedFunds.length),
-    l: common_vendor.o((...args) => $options.addSelectedFunds && $options.addSelectedFunds(...args))
+    k: $data.selectedGroupIds.length === 0 ? 1 : "",
+    l: common_vendor.o(($event) => $options.toggleGroup("")),
+    m: common_vendor.f($data.groupList, (group, k0, i0) => {
+      return {
+        a: common_vendor.t(group.name),
+        b: group.id,
+        c: $data.selectedGroupIds.includes(group.id) ? 1 : "",
+        d: common_vendor.o(($event) => $options.toggleGroup(group.id), group.id)
+      };
+    })
+  } : {}, {
+    n: $data.selectedFunds.length > 0
+  }, $data.selectedFunds.length > 0 ? {
+    o: common_vendor.t($data.selectedFunds.length),
+    p: common_vendor.o((...args) => $options.addSelectedFunds && $options.addSelectedFunds(...args))
   } : {});
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);

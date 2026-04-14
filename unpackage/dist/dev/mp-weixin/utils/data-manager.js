@@ -162,6 +162,192 @@ class DataManager {
     });
   }
   /**
+   * 获取分组列表
+   * @returns {Array} 分组列表
+   */
+  static getGroupList() {
+    try {
+      const groupList = common_vendor.index.getStorageSync("groupList");
+      return groupList || [];
+    } catch (e) {
+      common_vendor.index.__f__("error", "at utils/data-manager.js:189", "获取分组列表失败:", e);
+      return [];
+    }
+  }
+  /**
+   * 保存分组列表
+   * @param {Array} groupList - 分组列表
+   * @returns {Boolean} 保存是否成功
+   */
+  static saveGroupList(groupList) {
+    try {
+      common_vendor.index.setStorageSync("groupList", groupList);
+      return true;
+    } catch (e) {
+      common_vendor.index.__f__("error", "at utils/data-manager.js:204", "保存分组列表失败:", e);
+      return false;
+    }
+  }
+  /**
+   * 添加分组
+   * @param {Object} group - 分组对象 { name, order }
+   * @returns {Object|null} 添加成功返回分组对象，失败返回 null
+   */
+  static addGroup(group) {
+    try {
+      const groupList = this.getGroupList();
+      const newGroup = {
+        id: "group_" + Date.now(),
+        name: group.name,
+        order: groupList.length
+      };
+      groupList.push(newGroup);
+      common_vendor.index.setStorageSync("groupList", groupList);
+      return newGroup;
+    } catch (e) {
+      common_vendor.index.__f__("error", "at utils/data-manager.js:226", "添加分组失败:", e);
+      return null;
+    }
+  }
+  /**
+   * 更新分组
+   * @param {string} groupId - 分组ID
+   * @param {Object} updateData - 更新的数据
+   * @returns {Boolean} 更新是否成功
+   */
+  static updateGroup(groupId, updateData) {
+    try {
+      const groupList = this.getGroupList();
+      const groupIndex = groupList.findIndex((item) => item.id === groupId);
+      if (groupIndex === -1) {
+        return false;
+      }
+      groupList[groupIndex] = { ...groupList[groupIndex], ...updateData };
+      common_vendor.index.setStorageSync("groupList", groupList);
+      return true;
+    } catch (e) {
+      common_vendor.index.__f__("error", "at utils/data-manager.js:250", "更新分组失败:", e);
+      return false;
+    }
+  }
+  /**
+   * 删除分组
+   * @param {string} groupId - 分组ID
+   * @returns {Boolean} 删除是否成功
+   */
+  static removeGroup(groupId) {
+    try {
+      const groupList = this.getGroupList();
+      const filteredList = groupList.filter((item) => item.id !== groupId);
+      common_vendor.index.setStorageSync("groupList", filteredList);
+      const fundList = this.getFundList();
+      fundList.forEach((fund) => {
+        if (fund.groupIds && Array.isArray(fund.groupIds)) {
+          fund.groupIds = fund.groupIds.filter((id) => id !== groupId);
+        }
+        if (fund.groupId === groupId) {
+          fund.groupId = "";
+        }
+      });
+      this.saveFundList(fundList);
+      return true;
+    } catch (e) {
+      common_vendor.index.__f__("error", "at utils/data-manager.js:281", "删除分组失败:", e);
+      return false;
+    }
+  }
+  /**
+   * 将基金添加到分组
+   * @param {string} fundCode - 基金代码
+   * @param {string} groupId - 分组ID
+   * @returns {Boolean} 添加是否成功
+   */
+  static addFundToGroup(fundCode, groupId) {
+    try {
+      const fundList = this.getFundList();
+      const fundIndex = fundList.findIndex((item) => item.code === fundCode);
+      if (fundIndex === -1) {
+        return false;
+      }
+      const fund = fundList[fundIndex];
+      if (!fund.groupIds) {
+        fund.groupIds = fund.groupId ? [fund.groupId] : [];
+        delete fund.groupId;
+      }
+      if (!fund.groupIds.includes(groupId)) {
+        fund.groupIds.push(groupId);
+      }
+      common_vendor.index.setStorageSync("fundList", fundList);
+      return true;
+    } catch (e) {
+      common_vendor.index.__f__("error", "at utils/data-manager.js:315", "添加基金到分组失败:", e);
+      return false;
+    }
+  }
+  /**
+   * 将基金从分组中移除
+   * @param {string} fundCode - 基金代码
+   * @param {string} groupId - 分组ID
+   * @returns {Boolean} 移除是否成功
+   */
+  static removeFundFromGroup(fundCode, groupId) {
+    try {
+      const fundList = this.getFundList();
+      const fundIndex = fundList.findIndex((item) => item.code === fundCode);
+      if (fundIndex === -1) {
+        return false;
+      }
+      const fund = fundList[fundIndex];
+      if (!fund.groupIds) {
+        fund.groupIds = fund.groupId ? [fund.groupId] : [];
+        delete fund.groupId;
+      }
+      fund.groupIds = fund.groupIds.filter((id) => id !== groupId);
+      common_vendor.index.setStorageSync("fundList", fundList);
+      return true;
+    } catch (e) {
+      common_vendor.index.__f__("error", "at utils/data-manager.js:346", "从分组移除基金失败:", e);
+      return false;
+    }
+  }
+  /**
+   * 检查基金是否在指定分组中
+   * @param {Object} fund - 基金对象
+   * @param {string} groupId - 分组ID
+   * @returns {Boolean}
+   */
+  static isFundInGroup(fund, groupId) {
+    if (fund.groupIds && Array.isArray(fund.groupIds)) {
+      return fund.groupIds.includes(groupId);
+    }
+    if (fund.groupId) {
+      return fund.groupId === groupId;
+    }
+    return false;
+  }
+  /**
+   * 更新分组排序
+   * @param {Array} orderedIds - 排序后的分组ID数组
+   * @returns {Boolean} 更新是否成功
+   */
+  static reorderGroups(orderedIds) {
+    try {
+      const groupList = this.getGroupList();
+      const reorderedList = [];
+      orderedIds.forEach((id, index) => {
+        const group = groupList.find((g) => g.id === id);
+        if (group) {
+          reorderedList.push({ ...group, order: index });
+        }
+      });
+      common_vendor.index.setStorageSync("groupList", reorderedList);
+      return true;
+    } catch (e) {
+      common_vendor.index.__f__("error", "at utils/data-manager.js:387", "更新分组排序失败:", e);
+      return false;
+    }
+  }
+  /**
    * 导出数据
    * @returns {Object} 导出的数据对象
    */
@@ -169,6 +355,7 @@ class DataManager {
     return {
       settings: this.getSettings(),
       fundList: this.getFundList(),
+      groupList: this.getGroupList(),
       version: "1.0.0",
       exportTime: (/* @__PURE__ */ new Date()).toISOString()
     };
@@ -181,7 +368,7 @@ class DataManager {
   static importData(data) {
     try {
       if (!data || typeof data !== "object") {
-        common_vendor.index.__f__("error", "at utils/data-manager.js:201", "无效的导入数据");
+        common_vendor.index.__f__("error", "at utils/data-manager.js:414", "无效的导入数据");
         return false;
       }
       if (data.settings !== void 0) {
@@ -190,9 +377,12 @@ class DataManager {
       if (data.fundList !== void 0) {
         this.saveFundList(data.fundList);
       }
+      if (data.groupList !== void 0) {
+        this.saveGroupList(data.groupList);
+      }
       return true;
     } catch (e) {
-      common_vendor.index.__f__("error", "at utils/data-manager.js:216", "导入数据失败:", e);
+      common_vendor.index.__f__("error", "at utils/data-manager.js:433", "导入数据失败:", e);
       return false;
     }
   }
@@ -205,9 +395,10 @@ class DataManager {
       common_vendor.index.removeStorageSync("fundList");
       common_vendor.index.removeStorageSync("fundSettings");
       common_vendor.index.removeStorageSync("deviceId");
+      common_vendor.index.removeStorageSync("groupList");
       return true;
     } catch (e) {
-      common_vendor.index.__f__("error", "at utils/data-manager.js:232", "清除数据失败:", e);
+      common_vendor.index.__f__("error", "at utils/data-manager.js:450", "清除数据失败:", e);
       return false;
     }
   }

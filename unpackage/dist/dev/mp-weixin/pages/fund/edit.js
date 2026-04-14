@@ -24,15 +24,33 @@ const _sfc_main = {
       },
       calculatedAmount: null,
       calculatedHoldGains: null,
-      deviceId: ""
+      deviceId: "",
+      groupList: [],
+      selectedGroupIds: []
     };
   },
   onLoad(options) {
     this.fundCode = options.code;
     this.loadDeviceId();
+    this.loadGroupList();
     this.loadFundDetail();
   },
   methods: {
+    loadGroupList() {
+      this.groupList = utils_dataManager.DataManager.getGroupList();
+    },
+    toggleGroup(groupId) {
+      if (groupId === "") {
+        this.selectedGroupIds = [];
+      } else {
+        const index = this.selectedGroupIds.indexOf(groupId);
+        if (index > -1) {
+          this.selectedGroupIds.splice(index, 1);
+        } else {
+          this.selectedGroupIds.push(groupId);
+        }
+      }
+    },
     loadDeviceId() {
       let deviceId = common_vendor.index.getStorageSync("deviceId");
       if (!deviceId) {
@@ -55,6 +73,13 @@ const _sfc_main = {
       try {
         const fundList = utils_dataManager.DataManager.getFundList();
         const localFund = fundList.find((item) => item.code === this.fundCode);
+        if (localFund) {
+          if (localFund.groupIds && Array.isArray(localFund.groupIds)) {
+            this.selectedGroupIds = [...localFund.groupIds];
+          } else if (localFund.groupId) {
+            this.selectedGroupIds = [localFund.groupId];
+          }
+        }
         const result = await utils_fundApi.getFundData([this.fundCode], this.deviceId);
         const apiData = result.Datas || [];
         if (apiData.length > 0) {
@@ -66,7 +91,8 @@ const _sfc_main = {
             gsz: apiFund.gsz,
             gszzl: apiFund.gszzl,
             num: localFund ? localFund.num : "",
-            cost: localFund ? localFund.cost : ""
+            cost: localFund ? localFund.cost : "",
+            groupId: localFund ? localFund.groupId : ""
           };
           this.formData = {
             num: localFund ? localFund.num : "",
@@ -93,7 +119,7 @@ const _sfc_main = {
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/fund/edit.vue:169", "加载基金详情失败:", error);
+        common_vendor.index.__f__("error", "at pages/fund/edit.vue:211", "加载基金详情失败:", error);
         common_vendor.index.showToast({
           title: "加载失败",
           icon: "none"
@@ -128,7 +154,8 @@ const _sfc_main = {
       }
       const updateData = {
         num: this.formData.num,
-        cost: this.formData.cost
+        cost: this.formData.cost,
+        groupIds: [...this.selectedGroupIds]
       };
       utils_dataManager.DataManager.updateFund(this.fundCode, updateData);
       common_vendor.index.showToast({
@@ -155,30 +182,40 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     f: common_vendor.o((...args) => $options.calculateHoldGains && $options.calculateHoldGains(...args)),
     g: $data.formData.cost,
     h: common_vendor.o(($event) => $data.formData.cost = $event.detail.value),
-    i: $data.formData.num && $data.formData.cost
+    i: $data.selectedGroupIds.length === 0 ? 1 : "",
+    j: common_vendor.o(($event) => $options.toggleGroup("")),
+    k: common_vendor.f($data.groupList, (group, k0, i0) => {
+      return {
+        a: common_vendor.t(group.name),
+        b: group.id,
+        c: $data.selectedGroupIds.includes(group.id) ? 1 : "",
+        d: common_vendor.o(($event) => $options.toggleGroup(group.id), group.id)
+      };
+    }),
+    l: $data.formData.num && $data.formData.cost
   }, $data.formData.num && $data.formData.cost ? {
-    j: common_vendor.t($data.calculatedAmount)
+    m: common_vendor.t($data.calculatedAmount)
   } : {}, {
-    k: $data.calculatedHoldGains !== null
+    n: $data.calculatedHoldGains !== null
   }, $data.calculatedHoldGains !== null ? {
-    l: common_vendor.t($data.calculatedHoldGains >= 0 ? "+" : ""),
-    m: common_vendor.t($data.calculatedHoldGains),
-    n: $data.calculatedHoldGains >= 0 ? 1 : "",
-    o: $data.calculatedHoldGains < 0 ? 1 : ""
+    o: common_vendor.t($data.calculatedHoldGains >= 0 ? "+" : ""),
+    p: common_vendor.t($data.calculatedHoldGains),
+    q: $data.calculatedHoldGains >= 0 ? 1 : "",
+    r: $data.calculatedHoldGains < 0 ? 1 : ""
   } : {}, {
-    p: $data.fund.gsz
+    s: $data.fund.gsz
   }, $data.fund.gsz ? {
-    q: common_vendor.t($data.fund.gsz)
+    t: common_vendor.t($data.fund.gsz)
   } : {}, {
-    r: $data.fund.gszzl
+    v: $data.fund.gszzl
   }, $data.fund.gszzl ? {
-    s: common_vendor.t($data.fund.gszzl >= 0 ? "+" : ""),
-    t: common_vendor.t($data.fund.gszzl),
-    v: $data.fund.gszzl >= 0 ? 1 : "",
-    w: $data.fund.gszzl < 0 ? 1 : ""
+    w: common_vendor.t($data.fund.gszzl >= 0 ? "+" : ""),
+    x: common_vendor.t($data.fund.gszzl),
+    y: $data.fund.gszzl >= 0 ? 1 : "",
+    z: $data.fund.gszzl < 0 ? 1 : ""
   } : {}, {
-    x: common_vendor.o((...args) => $options.cancel && $options.cancel(...args)),
-    y: common_vendor.o((...args) => $options.save && $options.save(...args))
+    A: common_vendor.o((...args) => $options.cancel && $options.cancel(...args)),
+    B: common_vendor.o((...args) => $options.save && $options.save(...args))
   });
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
