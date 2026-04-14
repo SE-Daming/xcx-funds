@@ -7,6 +7,12 @@
 			}
 		},
 		{
+			"path": "pages/analysis/index",
+			"style": {
+				"navigationBarTitleText": "持仓分析"
+			}
+		},
+		{
 			"path": "pages/fund/detail",
 			"style": {
 				"navigationBarTitleText": "藏品详情"
@@ -52,7 +58,9 @@
 	"easycom": {
 		"autoscan": true,
 		"custom": {
-			"^fund-chart$": "@/components/fund-chart/fund-chart.vue"
+			"^fund-chart$": "@/components/fund-chart/fund-chart.vue",
+			"^pie-chart$": "@/components/pie-chart/pie-chart.vue",
+			"^profit-distribution$": "@/components/profit-distribution/profit-distribution.vue"
 		}
 	},
 	"uniIdRouter": {}

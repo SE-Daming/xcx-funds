@@ -56,6 +56,12 @@
 				</view>
 				<text class="label">一键导入教程</text>
 			</view>
+			<view class="action-item" @click="goToAnalysis">
+				<view class="icon-box analysis-icon">
+					<text class="icon">📊</text>
+				</view>
+				<text class="label">持仓分析</text>
+			</view>
 			<view class="action-item" @click="toggleEditMode">
 				<view class="icon-box edit-icon" :class="{ 'active': isEditMode }">
 					<text class="icon">⚙️</text>
@@ -213,8 +219,14 @@
 <script>
 import { getFundData } from '@/utils/fund-api.js';
 import { DataManager } from '@/utils/data-manager.js';
+import PieChart from '@/components/pie-chart/pie-chart.vue';
+import ProfitDistribution from '@/components/profit-distribution/profit-distribution.vue';
 
 export default {
+	components: {
+		PieChart,
+		ProfitDistribution
+	},
 	data() {
 		return {
 			title: '小蓝条',
@@ -224,6 +236,7 @@ export default {
 			showCost: false,
 			showCostRate: false,
 			showGSZ: false,
+			showChart: true, // 是否显示图表
 			allFundList: [],
 			fundList: [],
 			groupList: [],
@@ -273,6 +286,27 @@ export default {
 		},
 		filteredAmount() {
 			return this.calculateGroupAmount();
+		},
+		// 饼图数据
+		pieChartData() {
+			return this.fundList
+				.filter(f => f.amount && f.amount > 0)
+				.map(f => ({
+					name: f.name,
+					amount: f.amount,
+					code: f.code
+				}));
+		},
+		// 盈亏分布数据
+		fundListWithGains() {
+			return this.fundList
+				.filter(f => f.costGains !== undefined && f.costGains !== null)
+				.map(f => ({
+					code: f.code,
+					name: f.name,
+					costGains: f.costGains || 0,
+					costGainsRate: f.costGainsRate || '0.00'
+				}));
 		}
 	},
 	onLoad() {
@@ -606,6 +640,10 @@ export default {
 		toggleEditMode() {
 			this.isEditMode = !this.isEditMode;
 		},
+		goToAnalysis() {
+			const groupId = this.currentGroupId || '';
+			uni.navigateTo({ url: `/pages/analysis/index?groupId=${groupId}` });
+		},
 		goToSettings() {
 			uni.navigateTo({ url: '/pages/setting/index' });
 		},
@@ -724,6 +762,18 @@ export default {
 			this.applyGroupFilter();
 			uni.showToast({ title: '设置成功', icon: 'success' });
 			this.closeMoveGroupModal();
+		},
+		// 饼图点击事件
+		onPieChartClick(item) {
+			if (item && item.code) {
+				uni.navigateTo({ url: `/pages/fund/detail?code=${item.code}` });
+			}
+		},
+		// 盈亏分布点击事件
+		onProfitFundClick(fund) {
+			if (fund && fund.code) {
+				uni.navigateTo({ url: `/pages/fund/detail?code=${fund.code}` });
+			}
 		}
 	}
 }
@@ -873,6 +923,15 @@ export default {
 			}
 		}
 	}
+}
+
+/* 图表区域 */
+.chart-section {
+	background-color: #fff;
+	border-radius: 16rpx;
+	margin-bottom: 20rpx;
+	box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.06);
+	overflow: hidden;
 }
 
 /* 分组管理入口 */
