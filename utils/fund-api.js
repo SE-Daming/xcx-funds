@@ -273,7 +273,7 @@ export function getFundIntradayValuation(fundCode) {
   // 或者使用 FundVarietieValuationDetail (如果可用)
   // 这里暂时尝试 FundVarietieValuationDetail
   const url = `https://fundmobapi.eastmoney.com/FundMApi/FundVarietieValuationDetail.ashx?FCODE=${fundCode}&deviceid=Wap&plat=Wap&product=EFund&version=2.0.0`;
-  
+
   return new Promise((resolve) => {
     uni.request({
       url: url,
@@ -297,6 +297,47 @@ export function getFundIntradayValuation(fundCode) {
         }
       },
       fail: () => resolve([])
+    });
+  });
+}
+
+/**
+ * 获取基金历史净值数据
+ * @param {String} fundCode - 基金代码
+ * @param {String} range - 时间范围 (y=月, 3y=季, 6y=半年, n=一年)
+ * @returns {Promise}
+ */
+export function getFundHistoryNav(fundCode, range = 'y') {
+  const url = `https://fundmobapi.eastmoney.com/FundMApi/FundNetDiagram.ashx?FCODE=${fundCode}&RANGE=${range}&deviceid=Wap&plat=Wap&product=EFund&version=2.0.0`;
+
+  console.log('请求历史净值:', url);
+
+  return new Promise((resolve) => {
+    uni.request({
+      url: url,
+      method: 'GET',
+      success: (res) => {
+        console.log('历史净值响应:', res);
+        if (res.statusCode === 200 && res.data && res.data.Datas) {
+          const list = res.data.Datas;
+          // 按日期正序排列（API返回的是从新到旧，需要排序）
+          const navList = [...list].sort((a, b) => new Date(a.FSRQ) - new Date(b.FSRQ)).map(item => ({
+            date: item.FSRQ,           // 日期
+            nav: parseFloat(item.DWJZ), // 单位净值
+            accNav: parseFloat(item.LJJZ), // 累计净值
+            change: parseFloat(item.JZZZL) || 0  // 日增长率
+          }));
+          console.log('解析后数据:', navList.length, '条, 日期范围:', navList[0]?.date, '->', navList[navList.length-1]?.date);
+          resolve(navList);
+        } else {
+          console.log('历史净值数据为空');
+          resolve([]);
+        }
+      },
+      fail: (err) => {
+        console.error('历史净值请求失败:', err);
+        resolve([]);
+      }
     });
   });
 }

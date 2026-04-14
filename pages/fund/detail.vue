@@ -72,9 +72,29 @@
 		
 		<!-- 图表区域 -->
 		<view class="chart-card">
-			<view class="card-title">价格趋势</view>
+			<view class="chart-header">
+				<view class="card-title">价格趋势</view>
+				<view class="period-tabs">
+					<view
+						v-for="p in chartPeriods"
+						:key="p.key"
+						class="period-tab"
+						:class="{ active: chartPeriod === p.key }"
+						@click="changeChartPeriod(p.key)"
+					>{{ p.label }}</view>
+				</view>
+			</view>
 			<view class="chart-container">
-				<fund-chart :data="chartData" :labels="chartLabels" :color="chartColor"></fund-chart>
+				<view class="chart-loading" v-if="chartLoading">
+					<text>加载中...</text>
+				</view>
+				<fund-chart
+					v-show="!chartLoading"
+					:data="chartData"
+					:labels="chartLabels"
+					:color="chartColor"
+					:type="chartPeriod"
+				></fund-chart>
 			</view>
 		</view>
 		
@@ -87,11 +107,9 @@
 </template>
 
 <script>
-import { getFundData, getFundIntradayValuation } from '@/utils/fund-api.js';
+import { getFundData, getFundIntradayValuation, getFundHistoryNav } from '@/utils/fund-api.js';
 import { DataManager } from '@/utils/data-manager.js';
 import FundChart from '@/components/fund-chart/fund-chart.vue';
-
-console.log('fund-api exports:', { getFundData, getFundIntradayValuation });
 
 export default {
 	components: {
@@ -114,15 +132,24 @@ export default {
 			localFundInfo: null,
 			deviceId: '',
 			chartData: [],
-			chartLabels: ['09:30', '11:30/13:00', '15:00']
+			chartLabels: [],
+			// 图表周期
+			chartPeriod: 'y', // y=月, 3y=季, n=年
+			chartPeriods: [
+				{ key: 'y', label: '近1月' },
+				{ key: '3y', label: '近3月' },
+				{ key: 'n', label: '近1年' }
+			],
+			chartLoading: false
 		}
 	},
 	computed: {
 		chartColor() {
 			if (this.chartData.length > 0) {
-				// 如果有数据，根据最后一个点的涨跌幅决定颜色
+				// 如果有数据，根据最后一个点与第一个点的比较决定颜色
+				const first = this.chartData[0];
 				const last = this.chartData[this.chartData.length - 1];
-				return last >= 0 ? '#f5222d' : '#52c41a';
+				return last >= first ? '#f5222d' : '#52c41a';
 			}
 			return '#2979ff';
 		}
@@ -257,18 +284,35 @@ export default {
 			}
 		},
 		async loadChartData(code) {
+			this.chartLoading = true;
+			this.chartData = [];
+			this.chartLabels = [];
+
 			try {
-				const data = await getFundIntradayValuation(code);
+				// 使用净值走势接口
+				const data = await getFundHistoryNav(code, this.chartPeriod);
+				console.log('图表数据:', data[0]?.date, '->', data[data.length-1]?.date);
 				if (data && data.length > 0) {
-					// 提取涨跌幅数据用于绘图
-					this.chartData = data.map(item => item.change);
-				} else {
-					this.chartData = [];
+					this.chartData = data.map(item => item.nav);
+					// 均匀显示日期标签
+					const step = Math.max(1, Math.floor(data.length / 4));
+					this.chartLabels = data.map((item, index) => {
+						if (index === 0 || index === data.length - 1 || index % step === 0) {
+							return item.date.substring(5); // MM-DD
+						}
+						return '';
+					});
 				}
 			} catch (e) {
 				console.error('获取图表数据失败', e);
-				this.chartData = [];
+			} finally {
+				this.chartLoading = false;
 			}
+		},
+		changeChartPeriod(period) {
+			if (this.chartPeriod === period) return;
+			this.chartPeriod = period;
+			this.loadChartData(this.fundCode);
 		},
 		editFund() {
 			uni.navigateTo({
@@ -483,26 +527,59 @@ export default {
 	}
 }
 
+/* Chart Header */
+.chart-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24rpx;
+}
+
+.period-tabs {
+	display: flex;
+	gap: 16rpx;
+}
+
+.period-tab {
+	padding: 8rpx 20rpx;
+	font-size: 24rpx;
+	color: #666;
+	background-color: #f5f5f5;
+	border-radius: 20rpx;
+	transition: all 0.2s;
+
+	&.active {
+		background-color: #e8f4fd;
+		color: #2979ff;
+	}
+}
+
 /* Chart Placeholder */
 .chart-container {
-	height: 400rpx;
+	height: 420rpx;
 	background-color: #f9f9f9;
 	border-radius: 8rpx;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	
+	overflow: visible;
+
+	.chart-loading {
+		color: #999;
+		font-size: 26rpx;
+	}
+
 	.chart-placeholder {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		opacity: 0.5;
-		
+
 		.icon {
 			font-size: 60rpx;
 			margin-bottom: 20rpx;
 		}
-		
+
 		.text {
 			font-size: 26rpx;
 			color: $uni-text-color-grey;
