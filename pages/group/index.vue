@@ -12,6 +12,12 @@
 					<text class="group-count">{{ getFundCount(group.id) }}件藏品</text>
 				</view>
 				<view class="group-actions">
+					<view class="action-btn remove-fund" v-if="getFundCount(group.id) > 0" @click="showRemoveFundModal(group)">
+						<text>-</text>
+					</view>
+					<view class="action-btn add-fund" @click="showAddFundModal(group)">
+						<text>+</text>
+					</view>
 					<view class="action-btn move-up" v-if="index > 0" @click="moveUp(index)">
 						<text>↑</text>
 					</view>
@@ -42,7 +48,7 @@
 			</view>
 		</view>
 
-		<!-- 编辑弹窗 -->
+		<!-- 编辑/新建分组弹窗 -->
 		<view class="modal-mask" v-if="showModal" @click="closeModal">
 			<view class="modal-content" @click.stop>
 				<view class="modal-title">{{ editingGroup ? '编辑分组' : '新建分组' }}</view>
@@ -60,6 +66,68 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- 添加藏品到分组弹窗 -->
+		<view class="modal-mask" v-if="showAddFundModal_" @click="closeAddFundModal">
+			<view class="modal-content add-fund-modal" @click.stop>
+				<view class="modal-title">添加藏品到「{{ currentGroup ? currentGroup.name : '' }}」</view>
+				<view class="modal-body">
+					<view class="fund-select-list" v-if="availableFunds.length > 0">
+						<view class="fund-select-item" v-for="fund in availableFunds" :key="fund.code"
+							:class="{ 'selected': selectedFundCodes.includes(fund.code) }"
+							@click="toggleFundSelect(fund.code)">
+							<view class="fund-checkbox">
+								<text v-if="selectedFundCodes.includes(fund.code)">✓</text>
+							</view>
+							<view class="fund-info">
+								<text class="fund-name">{{ fund.name }}</text>
+								<text class="fund-code">{{ fund.code }}</text>
+							</view>
+						</view>
+					</view>
+					<view class="empty-hint" v-else>
+						<text>暂无可添加的藏品</text>
+					</view>
+				</view>
+				<view class="modal-footer">
+					<button class="modal-btn cancel" @click="closeAddFundModal">取消</button>
+					<button class="modal-btn confirm" @click="confirmAddFunds">
+						添加({{ selectedFundCodes.length }})
+					</button>
+				</view>
+			</view>
+		</view>
+
+		<!-- 从分组移除藏品弹窗 -->
+		<view class="modal-mask" v-if="showRemoveFundModal_" @click="closeRemoveFundModal">
+			<view class="modal-content add-fund-modal" @click.stop>
+				<view class="modal-title">从「{{ currentGroup ? currentGroup.name : '' }}」移除藏品</view>
+				<view class="modal-body">
+					<view class="fund-select-list" v-if="groupFunds.length > 0">
+						<view class="fund-select-item" v-for="fund in groupFunds" :key="fund.code"
+							:class="{ 'selected': selectedRemoveFundCodes.includes(fund.code) }"
+							@click="toggleRemoveFundSelect(fund.code)">
+							<view class="fund-checkbox">
+								<text v-if="selectedRemoveFundCodes.includes(fund.code)">✓</text>
+							</view>
+							<view class="fund-info">
+								<text class="fund-name">{{ fund.name }}</text>
+								<text class="fund-code">{{ fund.code }}</text>
+							</view>
+						</view>
+					</view>
+					<view class="empty-hint" v-else>
+						<text>该分组暂无藏品</text>
+					</view>
+				</view>
+				<view class="modal-footer">
+					<button class="modal-btn cancel" @click="closeRemoveFundModal">取消</button>
+					<button class="modal-btn confirm remove" @click="confirmRemoveFunds">
+						移除({{ selectedRemoveFundCodes.length }})
+					</button>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -74,7 +142,26 @@ export default {
 			selectedIds: [],
 			showModal: false,
 			editingGroup: null,
-			inputGroupName: ''
+			inputGroupName: '',
+			// 添加藏品相关
+			showAddFundModal_: false,
+			currentGroup: null,
+			selectedFundCodes: [],
+			// 移除藏品相关
+			showRemoveFundModal_: false,
+			selectedRemoveFundCodes: []
+		}
+	},
+	computed: {
+		availableFunds() {
+			// 返回不在当前分组的藏品
+			if (!this.currentGroup) return [];
+			return this.fundList.filter(fund => fund.groupId !== this.currentGroup.id);
+		},
+		groupFunds() {
+			// 返回当前分组内的藏品
+			if (!this.currentGroup) return [];
+			return this.fundList.filter(fund => fund.groupId === this.currentGroup.id);
 		}
 	},
 	onLoad() {
@@ -87,7 +174,6 @@ export default {
 		loadData() {
 			this.groupList = DataManager.getGroupList();
 			this.fundList = DataManager.getFundList();
-			// 清除已删除分组的选中状态
 			this.selectedIds = this.selectedIds.filter(id =>
 				this.groupList.some(g => g.id === id)
 			);
@@ -138,14 +224,95 @@ export default {
 					uni.showToast({ title: '创建成功', icon: 'success' });
 					this.loadData();
 					uni.$emit('groupChanged');
+					// 创建成功后询问是否添加藏品
+					this.showAddFundModalAfterCreate(newGroup);
 				}
 			}
 			this.closeModal();
 		},
+		// 创建分组后询问是否添加藏品
+		showAddFundModalAfterCreate(group) {
+			uni.showModal({
+				title: '添加藏品',
+				content: '是否立即从现有藏品中添加到此分组？',
+				confirmText: '去添加',
+				cancelText: '稍后再说',
+				success: (res) => {
+					if (res.confirm) {
+						this.showAddFundModal(group);
+					}
+				}
+			});
+		},
+		// 显示添加藏品弹窗
+		showAddFundModal(group) {
+			this.currentGroup = group;
+			this.selectedFundCodes = [];
+			this.showAddFundModal_ = true;
+		},
+		closeAddFundModal() {
+			this.showAddFundModal_ = false;
+			this.currentGroup = null;
+			this.selectedFundCodes = [];
+		},
+		toggleFundSelect(code) {
+			const index = this.selectedFundCodes.indexOf(code);
+			if (index > -1) {
+				this.selectedFundCodes.splice(index, 1);
+			} else {
+				this.selectedFundCodes.push(code);
+			}
+		},
+		confirmAddFunds() {
+			if (this.selectedFundCodes.length === 0) {
+				uni.showToast({ title: '请选择藏品', icon: 'none' });
+				return;
+			}
+			// 更新选中藏品的分组
+			this.selectedFundCodes.forEach(code => {
+				DataManager.updateFund(code, { groupId: this.currentGroup.id });
+			});
+			uni.showToast({ title: `已添加${this.selectedFundCodes.length}件藏品`, icon: 'success' });
+			this.loadData();
+			uni.$emit('groupChanged');
+			this.closeAddFundModal();
+		},
+		// 显示移除藏品弹窗
+		showRemoveFundModal(group) {
+			this.currentGroup = group;
+			this.selectedRemoveFundCodes = [];
+			this.showRemoveFundModal_ = true;
+		},
+		closeRemoveFundModal() {
+			this.showRemoveFundModal_ = false;
+			this.currentGroup = null;
+			this.selectedRemoveFundCodes = [];
+		},
+		toggleRemoveFundSelect(code) {
+			const index = this.selectedRemoveFundCodes.indexOf(code);
+			if (index > -1) {
+				this.selectedRemoveFundCodes.splice(index, 1);
+			} else {
+				this.selectedRemoveFundCodes.push(code);
+			}
+		},
+		confirmRemoveFunds() {
+			if (this.selectedRemoveFundCodes.length === 0) {
+				uni.showToast({ title: '请选择藏品', icon: 'none' });
+				return;
+			}
+			// 将选中藏品的分组置空
+			this.selectedRemoveFundCodes.forEach(code => {
+				DataManager.updateFund(code, { groupId: '' });
+			});
+			uni.showToast({ title: `已移除${this.selectedRemoveFundCodes.length}件藏品`, icon: 'success' });
+			this.loadData();
+			uni.$emit('groupChanged');
+			this.closeRemoveFundModal();
+		},
 		batchDelete() {
 			if (this.selectedIds.length === 0) return;
 
-			// 统计受影响的藏品数量
 			let totalFunds = 0;
 			this.selectedIds.forEach(id => {
 				totalFunds += this.getFundCount(id);
@@ -272,6 +439,20 @@ export default {
 			background-color: #f5f5f5;
 			color: #666;
 		}
+
+		&.add-fund {
+			background-color: #e8f4fd;
+			color: #3498db;
+			font-size: 32rpx;
+			font-weight: bold;
+		}
+
+		&.remove-fund {
+			background-color: #fef0f0;
+			color: #e74c3c;
+			font-size: 32rpx;
+			font-weight: bold;
+		}
 	}
 }
 
@@ -366,6 +547,13 @@ export default {
 	overflow: hidden;
 }
 
+.add-fund-modal {
+	width: 650rpx;
+	max-height: 80vh;
+	display: flex;
+	flex-direction: column;
+}
+
 .modal-title {
 	padding: 36rpx;
 	text-align: center;
@@ -373,10 +561,13 @@ export default {
 	font-weight: bold;
 	color: #333;
 	border-bottom: 1rpx solid #f0f0f0;
+	flex-shrink: 0;
 }
 
 .modal-body {
-	padding: 40rpx 36rpx;
+	padding: 30rpx;
+	flex: 1;
+	overflow-y: auto;
 }
 
 .modal-input {
@@ -396,6 +587,7 @@ export default {
 .modal-footer {
 	display: flex;
 	border-top: 1rpx solid #f0f0f0;
+	flex-shrink: 0;
 }
 
 .modal-btn {
@@ -420,6 +612,69 @@ export default {
 	&.confirm {
 		color: #3498db;
 		font-weight: 500;
+
+		&.remove {
+			color: #e74c3c;
+		}
+	}
+}
+
+/* 藏品选择列表 */
+.fund-select-list {
+	max-height: 500rpx;
+	overflow-y: auto;
+}
+
+.fund-select-item {
+	display: flex;
+	align-items: center;
+	padding: 20rpx;
+	border-radius: 12rpx;
+	margin-bottom: 12rpx;
+	background-color: #f8f9fa;
+	transition: all 0.2s;
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+
+	&.selected {
+		background-color: #e8f4fd;
+
+		.fund-checkbox {
+			background-color: #3498db;
+			border-color: #3498db;
+			color: #fff;
+		}
+	}
+
+	.fund-checkbox {
+		width: 40rpx;
+		height: 40rpx;
+		border: 2rpx solid #ddd;
+		border-radius: 50%;
+		margin-right: 16rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 22rpx;
+		flex-shrink: 0;
+	}
+
+	.fund-info {
+		flex: 1;
+
+		.fund-name {
+			font-size: 28rpx;
+			color: #333;
+			display: block;
+			margin-bottom: 4rpx;
+		}
+
+		.fund-code {
+			font-size: 24rpx;
+			color: #999;
+		}
 	}
 }
 </style>
