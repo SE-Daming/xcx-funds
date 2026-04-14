@@ -615,18 +615,43 @@ export default {
 		},
 		deleteFund(index) {
 			const fund = this.fundList[index];
-			uni.showModal({
-				title: '确认删除',
-				content: `确定要删除 ${fund.name} 吗？`,
-				success: (res) => {
-					if (res.confirm) {
-						DataManager.removeFund(fund.code);
-						const allIndex = this.allFundList.findIndex(f => f.code === fund.code);
-						if (allIndex >= 0) this.allFundList.splice(allIndex, 1);
-						this.fundList.splice(index, 1);
+
+			// 判断是否在"全部"视图
+			if (!this.currentGroupId) {
+				// 在"全部"中删除 = 彻底删除藏品
+				uni.showModal({
+					title: '确认删除',
+					content: `确定要删除 ${fund.name} 吗？该藏品将从所有分组中移除。`,
+					success: (res) => {
+						if (res.confirm) {
+							DataManager.removeFund(fund.code);
+							const allIndex = this.allFundList.findIndex(f => f.code === fund.code);
+							if (allIndex >= 0) this.allFundList.splice(allIndex, 1);
+							this.fundList.splice(index, 1);
+							uni.$emit('fundDeleted');
+						}
 					}
-				}
-			});
+				});
+			} else {
+				// 在特定分组中删除 = 只从该分组移除
+				uni.showModal({
+					title: '移出分组',
+					content: `将 ${fund.name} 从「${this.currentGroupName}」移出？藏品仍保留在其他分组中。`,
+					confirmText: '移出',
+					success: (res) => {
+						if (res.confirm) {
+							DataManager.removeFundFromGroup(fund.code, this.currentGroupId);
+							this.fundList.splice(index, 1);
+							// 更新 allFundList 中的分组信息
+							const allFund = this.allFundList.find(f => f.code === fund.code);
+							if (allFund && allFund.groupIds) {
+								allFund.groupIds = allFund.groupIds.filter(id => id !== this.currentGroupId);
+							}
+							uni.$emit('groupChanged');
+						}
+					}
+				});
+			}
 		},
 		setSort(type) {
 			this.sortType = type;
