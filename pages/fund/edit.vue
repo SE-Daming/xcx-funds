@@ -30,13 +30,16 @@
 
 			<!-- 分组选择 -->
 			<view class="form-item">
-				<view class="label">所属分组</view>
-				<picker mode="selector" :range="groupPickerRange" :value="selectedGroupIndex" @change="onGroupChange">
-					<view class="group-picker">
-						<text class="group-value">{{ selectedGroupName }}</text>
-						<text class="arrow">▾</text>
+				<view class="label">所属分组（可多选）</view>
+				<view class="group-tags">
+					<view class="group-tag" :class="{ 'active': selectedGroupIds.length === 0 }" @click="toggleGroup('')">
+						<text>不选择分组</text>
 					</view>
-				</picker>
+					<view class="group-tag" v-for="group in groupList" :key="group.id"
+						:class="{ 'active': selectedGroupIds.includes(group.id) }" @click="toggleGroup(group.id)">
+						<text>{{ group.name }}</text>
+					</view>
+				</view>
 			</view>
 
 			<view class="form-item" v-if="formData.num && formData.cost">
@@ -97,19 +100,7 @@ export default {
 			calculatedHoldGains: null,
 			deviceId: '',
 			groupList: [],
-			selectedGroupIndex: 0
-		}
-	},
-	computed: {
-		groupPickerRange() {
-			return ['不选择分组', ...this.groupList.map(g => g.name)];
-		},
-		selectedGroupName() {
-			return this.groupPickerRange[this.selectedGroupIndex] || '不选择分组';
-		},
-		selectedGroupId() {
-			if (this.selectedGroupIndex === 0) return '';
-			return this.groupList[this.selectedGroupIndex - 1]?.id || '';
+			selectedGroupIds: []
 		}
 	},
 	onLoad(options) {
@@ -122,8 +113,17 @@ export default {
 		loadGroupList() {
 			this.groupList = DataManager.getGroupList();
 		},
-		onGroupChange(e) {
-			this.selectedGroupIndex = parseInt(e.detail.value);
+		toggleGroup(groupId) {
+			if (groupId === '') {
+				this.selectedGroupIds = [];
+			} else {
+				const index = this.selectedGroupIds.indexOf(groupId);
+				if (index > -1) {
+					this.selectedGroupIds.splice(index, 1);
+				} else {
+					this.selectedGroupIds.push(groupId);
+				}
+			}
 		},
 		loadDeviceId() {
 			// 获取或生成设备ID
@@ -153,9 +153,12 @@ export default {
 				const localFund = fundList.find(item => item.code === this.fundCode);
 
 				// 初始化分组选择
-				if (localFund && localFund.groupId) {
-					const groupIndex = this.groupList.findIndex(g => g.id === localFund.groupId);
-					this.selectedGroupIndex = groupIndex >= 0 ? groupIndex + 1 : 0;
+				if (localFund) {
+					if (localFund.groupIds && Array.isArray(localFund.groupIds)) {
+						this.selectedGroupIds = [...localFund.groupIds];
+					} else if (localFund.groupId) {
+						this.selectedGroupIds = [localFund.groupId];
+					}
 				}
 
 				// 从API获取基金实时数据
@@ -244,7 +247,7 @@ export default {
 			const updateData = {
 				num: this.formData.num,
 				cost: this.formData.cost,
-				groupId: this.selectedGroupId
+				groupIds: [...this.selectedGroupIds]
 			};
 
 			DataManager.updateFund(this.fundCode, updateData);
@@ -344,23 +347,26 @@ export default {
 	color: #2ed573;
 }
 
-/* 分组选择器样式 */
-.form-section .form-item .group-picker {
+/* 分组选择样式 */
+.form-section .form-item .group-tags {
 	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 20rpx;
-	background-color: #f8f9fa;
-	border-radius: 8rpx;
+	flex-wrap: wrap;
+	gap: 16rpx;
 
-	.group-value {
-		font-size: 28rpx;
-		color: #333;
-	}
+	.group-tag {
+		padding: 16rpx 28rpx;
+		background-color: #f5f5f5;
+		border-radius: 30rpx;
+		font-size: 26rpx;
+		color: #666;
+		border: 2rpx solid transparent;
+		transition: all 0.2s;
 
-	.arrow {
-		color: #999;
-		font-size: 24rpx;
+		&.active {
+			background-color: #e8f4fd;
+			color: #3498db;
+			border-color: #3498db;
+		}
 	}
 }
 

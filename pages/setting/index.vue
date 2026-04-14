@@ -145,7 +145,8 @@ export default {
 										name: fund.name || '未知基金',
 										num: parseFloat(fund.num) || 0,
 										cost: parseFloat(fund.cost) || 0,
-										groupId: fund.groupId || ''
+										// 兼容新旧数据结构
+										groupIds: fund.groupIds || (fund.groupId ? [fund.groupId] : [])
 									})).filter(f => f.code);
 
 									if (newSettings) {
@@ -226,7 +227,8 @@ export default {
 												name: fund.name || '未知基金',
 												num: parseFloat(fund.num) || 0,
 												cost: parseFloat(fund.cost) || 0,
-												groupId: fund.groupId || ''
+												// 兼容新旧数据结构
+												groupIds: fund.groupIds || (fund.groupId ? [fund.groupId] : [])
 											};
 
 											if (!existingCodes.has(normalizedFund.code)) {

@@ -112,7 +112,7 @@
 					<view class="fund-info">
 						<view class="fund-name-row">
 							<text class="fund-name">{{ fund.name }}</text>
-							<text class="group-tag" v-if="getFundGroupName(fund.groupId)">{{ getFundGroupName(fund.groupId) }}</text>
+							<text class="group-tag" v-if="getFundGroupName(fund)">{{ getFundGroupName(fund) }}</text>
 						</view>
 						<view class="fund-code-row">
 							<text class="fund-code">{{ fund.code }}</text>
@@ -182,19 +182,19 @@
 		<!-- 底部占位，防止被导航栏遮挡 -->
 		<view class="footer-spacer"></view>
 
-		<!-- 移动分组弹窗 -->
+		<!-- 设置分组弹窗 -->
 		<view class="modal-mask" v-if="showMoveGroup" @click="closeMoveGroupModal">
 			<view class="modal-content" @click.stop>
-				<view class="modal-title">移动到分组</view>
+				<view class="modal-title">设置分组</view>
 				<view class="modal-body">
-					<view class="group-option" :class="{ 'active': moveTargetGroupId === '' }" @click="moveTargetGroupId = ''">
+					<view class="group-option" :class="{ 'active': moveSelectedGroupIds.length === 0 }" @click="toggleMoveGroup('')">
 						<text>未分组</text>
-						<text class="check" v-if="moveTargetGroupId === ''">✓</text>
+						<text class="check" v-if="moveSelectedGroupIds.length === 0">✓</text>
 					</view>
 					<view class="group-option" v-for="group in groupList" :key="group.id"
-						:class="{ 'active': moveTargetGroupId === group.id }" @click="moveTargetGroupId = group.id">
+						:class="{ 'active': moveSelectedGroupIds.includes(group.id) }" @click="toggleMoveGroup(group.id)">
 						<text>{{ group.name }}</text>
-						<text class="check" v-if="moveTargetGroupId === group.id">✓</text>
+						<text class="check" v-if="moveSelectedGroupIds.includes(group.id)">✓</text>
 					</view>
 				</view>
 				<view class="modal-footer">
@@ -238,10 +238,10 @@ export default {
 			sortOrderKeyRange: ['desc', 'asc'],
 			sortTypeIndex: 0,
 			sortOrderIndex: 0,
-			// 移动分组
+			// 设置分组
 			showMoveGroup: false,
 			moveFund: null,
-			moveTargetGroupId: ''
+			moveSelectedGroupIds: []
 		}
 	},
 	computed: {
@@ -325,13 +325,36 @@ export default {
 			this.currentGroupId = groupId;
 			this.applyGroupFilter();
 		},
-		getGroupFundCount(groupId) {
-			return this.allFundList.filter(fund => fund.groupId === groupId).length;
+		isFundInGroup(fund, groupId) {
+			// 新数据结构：groupIds 数组
+			if (fund.groupIds && Array.isArray(fund.groupIds)) {
+				return fund.groupIds.includes(groupId);
+			}
+			// 兼容旧数据：groupId 字符串
+			if (fund.groupId) {
+				return fund.groupId === groupId;
+			}
+			return false;
 		},
-		getFundGroupName(groupId) {
-			if (!groupId) return '';
-			const group = this.groupList.find(g => g.id === groupId);
-			return group ? group.name : '';
+		getGroupFundCount(groupId) {
+			return this.allFundList.filter(fund => this.isFundInGroup(fund, groupId)).length;
+		},
+		getFundGroupName(fund) {
+			if (!fund) return '';
+			// 新数据结构：显示所有分组名
+			if (fund.groupIds && Array.isArray(fund.groupIds) && fund.groupIds.length > 0) {
+				const names = fund.groupIds.map(id => {
+					const group = this.groupList.find(g => g.id === id);
+					return group ? group.name : '';
+				}).filter(name => name);
+				return names.join('、');
+			}
+			// 兼容旧数据
+			if (fund.groupId) {
+				const group = this.groupList.find(g => g.id === fund.groupId);
+				return group ? group.name : '';
+			}
+			return '';
 		},
 		goToGroupManage() {
 			uni.navigateTo({ url: '/pages/group/index' });
@@ -340,7 +363,7 @@ export default {
 			if (!this.currentGroupId) {
 				this.fundList = [...this.allFundList];
 			} else {
-				this.fundList = this.allFundList.filter(fund => fund.groupId === this.currentGroupId);
+				this.fundList = this.allFundList.filter(fund => this.isFundInGroup(fund, this.currentGroupId));
 			}
 			this.applySort();
 		},
@@ -599,24 +622,49 @@ export default {
 			});
 			this.fundList = list;
 		},
-		// 移动分组
+		// 设置分组
 		showMoveGroupModal(fund) {
 			this.moveFund = fund;
-			this.moveTargetGroupId = fund.groupId || '';
+			// 初始化已选分组
+			if (fund.groupIds && Array.isArray(fund.groupIds)) {
+				this.moveSelectedGroupIds = [...fund.groupIds];
+			} else if (fund.groupId) {
+				this.moveSelectedGroupIds = [fund.groupId];
+			} else {
+				this.moveSelectedGroupIds = [];
+			}
 			this.showMoveGroup = true;
 		},
 		closeMoveGroupModal() {
 			this.showMoveGroup = false;
 			this.moveFund = null;
-			this.moveTargetGroupId = '';
+			this.moveSelectedGroupIds = [];
+		},
+		toggleMoveGroup(groupId) {
+			if (groupId === '') {
+				// 点击"未分组"，清空所有选择
+				this.moveSelectedGroupIds = [];
+			} else {
+				const index = this.moveSelectedGroupIds.indexOf(groupId);
+				if (index > -1) {
+					this.moveSelectedGroupIds.splice(index, 1);
+				} else {
+					this.moveSelectedGroupIds.push(groupId);
+				}
+			}
 		},
 		confirmMoveGroup() {
 			if (!this.moveFund) return;
-			DataManager.updateFund(this.moveFund.code, { groupId: this.moveTargetGroupId });
+			// 更新基金的分组
 			const fund = this.allFundList.find(f => f.code === this.moveFund.code);
-			if (fund) fund.groupId = this.moveTargetGroupId;
+			if (fund) {
+				fund.groupIds = [...this.moveSelectedGroupIds];
+				// 清除旧的 groupId 字段
+				delete fund.groupId;
+				DataManager.saveFundList(this.allFundList);
+			}
 			this.applyGroupFilter();
-			uni.showToast({ title: '移动成功', icon: 'success' });
+			uni.showToast({ title: '设置成功', icon: 'success' });
 			this.closeMoveGroupModal();
 		}
 	}

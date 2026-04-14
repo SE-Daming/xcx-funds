@@ -154,14 +154,14 @@ export default {
 	},
 	computed: {
 		availableFunds() {
-			// 返回不在当前分组的藏品
+			// 返回所有藏品（一只基金可以属于多个分组）
 			if (!this.currentGroup) return [];
-			return this.fundList.filter(fund => fund.groupId !== this.currentGroup.id);
+			return this.fundList;
 		},
 		groupFunds() {
 			// 返回当前分组内的藏品
 			if (!this.currentGroup) return [];
-			return this.fundList.filter(fund => fund.groupId === this.currentGroup.id);
+			return this.fundList.filter(fund => this.isFundInGroup(fund, this.currentGroup.id));
 		}
 	},
 	onLoad() {
@@ -179,7 +179,18 @@ export default {
 			);
 		},
 		getFundCount(groupId) {
-			return this.fundList.filter(fund => fund.groupId === groupId).length;
+			return this.fundList.filter(fund => this.isFundInGroup(fund, groupId)).length;
+		},
+		isFundInGroup(fund, groupId) {
+			// 新数据结构：groupIds 数组
+			if (fund.groupIds && Array.isArray(fund.groupIds)) {
+				return fund.groupIds.includes(groupId);
+			}
+			// 兼容旧数据：groupId 字符串
+			if (fund.groupId) {
+				return fund.groupId === groupId;
+			}
+			return false;
 		},
 		toggleSelect(groupId) {
 			const index = this.selectedIds.indexOf(groupId);
@@ -268,9 +279,9 @@ export default {
 				uni.showToast({ title: '请选择藏品', icon: 'none' });
 				return;
 			}
-			// 更新选中藏品的分组
+			// 将选中藏品添加到当前分组
 			this.selectedFundCodes.forEach(code => {
-				DataManager.updateFund(code, { groupId: this.currentGroup.id });
+				DataManager.addFundToGroup(code, this.currentGroup.id);
 			});
 			uni.showToast({ title: `已添加${this.selectedFundCodes.length}件藏品`, icon: 'success' });
 			this.loadData();
@@ -301,9 +312,9 @@ export default {
 				uni.showToast({ title: '请选择藏品', icon: 'none' });
 				return;
 			}
-			// 将选中藏品的分组置空
+			// 将选中藏品从当前分组移除
 			this.selectedRemoveFundCodes.forEach(code => {
-				DataManager.updateFund(code, { groupId: '' });
+				DataManager.removeFundFromGroup(code, this.currentGroup.id);
 			});
 			uni.showToast({ title: `已移除${this.selectedRemoveFundCodes.length}件藏品`, icon: 'success' });
 			this.loadData();

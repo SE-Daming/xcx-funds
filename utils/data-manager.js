@@ -263,9 +263,13 @@ export class DataManager {
       const filteredList = groupList.filter(item => item.id !== groupId);
       uni.setStorageSync('groupList', filteredList);
 
-      // 同时清除该分组下基金的 groupId
+      // 同时从基金的 groupIds 数组中移除该分组ID
       const fundList = this.getFundList();
       fundList.forEach(fund => {
+        if (fund.groupIds && Array.isArray(fund.groupIds)) {
+          fund.groupIds = fund.groupIds.filter(id => id !== groupId);
+        }
+        // 兼容旧数据：如果还是 groupId 字段
         if (fund.groupId === groupId) {
           fund.groupId = '';
         }
@@ -277,6 +281,89 @@ export class DataManager {
       console.error('删除分组失败:', e);
       return false;
     }
+  }
+
+  /**
+   * 将基金添加到分组
+   * @param {string} fundCode - 基金代码
+   * @param {string} groupId - 分组ID
+   * @returns {Boolean} 添加是否成功
+   */
+  static addFundToGroup(fundCode, groupId) {
+    try {
+      const fundList = this.getFundList();
+      const fundIndex = fundList.findIndex(item => item.code === fundCode);
+
+      if (fundIndex === -1) {
+        return false;
+      }
+
+      const fund = fundList[fundIndex];
+      // 兼容旧数据：将 groupId 转换为 groupIds
+      if (!fund.groupIds) {
+        fund.groupIds = fund.groupId ? [fund.groupId] : [];
+        delete fund.groupId;
+      }
+
+      if (!fund.groupIds.includes(groupId)) {
+        fund.groupIds.push(groupId);
+      }
+
+      uni.setStorageSync('fundList', fundList);
+      return true;
+    } catch (e) {
+      console.error('添加基金到分组失败:', e);
+      return false;
+    }
+  }
+
+  /**
+   * 将基金从分组中移除
+   * @param {string} fundCode - 基金代码
+   * @param {string} groupId - 分组ID
+   * @returns {Boolean} 移除是否成功
+   */
+  static removeFundFromGroup(fundCode, groupId) {
+    try {
+      const fundList = this.getFundList();
+      const fundIndex = fundList.findIndex(item => item.code === fundCode);
+
+      if (fundIndex === -1) {
+        return false;
+      }
+
+      const fund = fundList[fundIndex];
+      // 兼容旧数据：将 groupId 转换为 groupIds
+      if (!fund.groupIds) {
+        fund.groupIds = fund.groupId ? [fund.groupId] : [];
+        delete fund.groupId;
+      }
+
+      fund.groupIds = fund.groupIds.filter(id => id !== groupId);
+      uni.setStorageSync('fundList', fundList);
+      return true;
+    } catch (e) {
+      console.error('从分组移除基金失败:', e);
+      return false;
+    }
+  }
+
+  /**
+   * 检查基金是否在指定分组中
+   * @param {Object} fund - 基金对象
+   * @param {string} groupId - 分组ID
+   * @returns {Boolean}
+   */
+  static isFundInGroup(fund, groupId) {
+    // 新数据结构
+    if (fund.groupIds && Array.isArray(fund.groupIds)) {
+      return fund.groupIds.includes(groupId);
+    }
+    // 兼容旧数据
+    if (fund.groupId) {
+      return fund.groupId === groupId;
+    }
+    return false;
   }
 
   /**

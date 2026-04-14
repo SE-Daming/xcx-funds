@@ -36,13 +36,16 @@
 
 		<!-- 分组选择 -->
 		<view class="group-section" v-if="selectedFunds.length > 0">
-			<view class="section-title">选择分组（可选）</view>
-			<picker mode="selector" :range="groupPickerRange" :value="selectedGroupIndex" @change="onGroupChange">
-				<view class="group-picker">
-					<text class="group-value">{{ selectedGroupName }}</text>
-					<text class="arrow">▾</text>
+			<view class="section-title">选择分组（可多选）</view>
+			<view class="group-tags">
+				<view class="group-tag" :class="{ 'active': selectedGroupIds.length === 0 }" @click="toggleGroup('')">
+					<text>不选择分组</text>
 				</view>
-			</picker>
+				<view class="group-tag" v-for="group in groupList" :key="group.id"
+					:class="{ 'active': selectedGroupIds.includes(group.id) }" @click="toggleGroup(group.id)">
+					<text>{{ group.name }}</text>
+				</view>
+			</view>
 		</view>
 
 		<view class="action-section" v-if="selectedFunds.length > 0">
@@ -62,19 +65,7 @@ export default {
 			searchResults: [],
 			selectedFunds: [],
 			groupList: [],
-			selectedGroupIndex: 0
-		}
-	},
-	computed: {
-		groupPickerRange() {
-			return ['不选择分组', ...this.groupList.map(g => g.name)];
-		},
-		selectedGroupName() {
-			return this.groupPickerRange[this.selectedGroupIndex] || '不选择分组';
-		},
-		selectedGroupId() {
-			if (this.selectedGroupIndex === 0) return '';
-			return this.groupList[this.selectedGroupIndex - 1]?.id || '';
+			selectedGroupIds: []
 		}
 	},
 	onLoad() {
@@ -87,8 +78,18 @@ export default {
 		loadGroupList() {
 			this.groupList = DataManager.getGroupList();
 		},
-		onGroupChange(e) {
-			this.selectedGroupIndex = parseInt(e.detail.value);
+		toggleGroup(groupId) {
+			if (groupId === '') {
+				// 点击"不选择分组"，清空所有选择
+				this.selectedGroupIds = [];
+			} else {
+				const index = this.selectedGroupIds.indexOf(groupId);
+				if (index > -1) {
+					this.selectedGroupIds.splice(index, 1);
+				} else {
+					this.selectedGroupIds.push(groupId);
+				}
+			}
 		},
 		async searchFunds(e) {
 			const keyword = e.detail.value.trim();
@@ -162,7 +163,7 @@ export default {
 						name: selectedFund.name,
 						num: 0, // 默认持有份额为0
 						cost: 0, // 默认持仓成本为0
-						groupId: this.selectedGroupId // 添加分组ID
+						groupIds: [...this.selectedGroupIds] // 添加分组ID数组
 					});
 				}
 			});
@@ -349,22 +350,25 @@ export default {
 		margin-bottom: 20rpx;
 	}
 
-	.group-picker {
+	.group-tags {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 20rpx;
-		background-color: #f8f9fa;
-		border-radius: 8rpx;
+		flex-wrap: wrap;
+		gap: 16rpx;
 
-		.group-value {
-			font-size: 28rpx;
-			color: #333;
-		}
+		.group-tag {
+			padding: 16rpx 28rpx;
+			background-color: #f5f5f5;
+			border-radius: 30rpx;
+			font-size: 26rpx;
+			color: #666;
+			border: 2rpx solid transparent;
+			transition: all 0.2s;
 
-		.arrow {
-			color: #999;
-			font-size: 24rpx;
+			&.active {
+				background-color: #e8f4fd;
+				color: #3498db;
+				border-color: #3498db;
+			}
 		}
 	}
 }
