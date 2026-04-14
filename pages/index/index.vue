@@ -5,6 +5,9 @@
 			<view class="dashboard-header">
 				<text class="title">今日变动</text>
 				<view class="right-tools">
+					<view class="privacy-switch">
+						<switch :checked="privacyMode" @change="togglePrivacyMode" color="#fff" />
+					</view>
 					<view class="update-badge">
 						<text class="update-time">{{ lastUpdateDisplay || '--' }}</text>
 					</view>
@@ -15,7 +18,7 @@
 			</view>
 			<view class="dashboard-content">
 				<view class="gains-main">
-					<text class="amount" :class="{ 'red': filteredTodayGains >= 0, 'green': filteredTodayGains < 0 }">{{ filteredTodayGains > 0 ? '+' : '' }}{{ filteredTodayGains.toFixed(2) }}</text>
+					<text class="amount" :class="{ 'red': !privacyMode && filteredTodayGains >= 0, 'green': !privacyMode && filteredTodayGains < 0 }">{{ privacyMode ? '****' : (filteredTodayGains > 0 ? '+' : '') + filteredTodayGains.toFixed(2) }}</text>
 				</view>
 
 				<view class="dashboard-divider"></view>
@@ -23,16 +26,17 @@
 				<view class="gains-grid">
 					<view class="grid-item">
 						<text class="label">累计变动</text>
-						<text class="value" :class="{ 'red': filteredHoldGains >= 0, 'green': filteredHoldGains < 0 }">{{ filteredHoldGains > 0 ? '+' : '' }}{{ filteredHoldGains.toFixed(2) }}</text>
+						<text class="value" :class="{ 'red': !privacyMode && filteredHoldGains >= 0, 'green': !privacyMode && filteredHoldGains < 0 }">{{ privacyMode ? '****' : (filteredHoldGains > 0 ? '+' : '') + filteredHoldGains.toFixed(2) }}</text>
 					</view>
 					<view class="grid-item">
 						<text class="label">累计变动率</text>
-						<text class="value" v-if="filteredCost > 0" :class="{ 'red': filteredHoldGains >= 0, 'green': filteredHoldGains < 0 }">{{ filteredHoldGains > 0 ? '+' : '' }}{{ ((filteredHoldGains / filteredCost) * 100).toFixed(2) }}%</text>
+						<text class="value" v-if="privacyMode">****</text>
+						<text class="value" v-else-if="filteredCost > 0" :class="{ 'red': filteredHoldGains >= 0, 'green': filteredHoldGains < 0 }">{{ filteredHoldGains > 0 ? '+' : '' }}{{ ((filteredHoldGains / filteredCost) * 100).toFixed(2) }}%</text>
 						<text class="value" v-else>0.00%</text>
 					</view>
 					<view class="grid-item">
 						<text class="label">持有总值</text>
-						<text class="value">{{ filteredAmount.toFixed(2) }}</text>
+						<text class="value">{{ privacyMode ? '****' : filteredAmount.toFixed(2) }}</text>
 					</view>
 				</view>
 			</view>
@@ -139,20 +143,20 @@
 				<view class="card-extra" v-if="showGains || showCost || showAmount">
 					<view class="extra-item" v-if="showGains">
 						<text class="label">今日</text>
-						<text class="value" :class="{ 'red': fund.gains >= 0, 'green': fund.gains < 0 }">{{ fund.gains ? (fund.gains >= 0 ? '+' : '') + fund.gains.toFixed(2) : '--' }}</text>
+						<text class="value" :class="{ 'red': !privacyMode && fund.gains >= 0, 'green': !privacyMode && fund.gains < 0 }">{{ privacyMode ? '****' : (fund.gains ? (fund.gains >= 0 ? '+' : '') + fund.gains.toFixed(2) : '--') }}</text>
 					</view>
 					<view class="extra-item" v-if="showCost">
 						<text class="label">累计</text>
-						<text class="value" :class="{ 'red': fund.costGains >= 0, 'green': fund.costGains < 0 }">{{ fund.costGains ? (fund.costGains >= 0 ? '+' : '') + fund.costGains.toFixed(2) : '--' }}</text>
+						<text class="value" :class="{ 'red': !privacyMode && fund.costGains >= 0, 'green': !privacyMode && fund.costGains < 0 }">{{ privacyMode ? '****' : (fund.costGains ? (fund.costGains >= 0 ? '+' : '') + fund.costGains.toFixed(2) : '--') }}</text>
 					</view>
 					<view class="extra-item" v-if="showAmount">
 						<text class="label">总值</text>
-						<text class="value">{{ fund.amount ? fund.amount.toFixed(2) : '--' }}</text>
+						<text class="value">{{ privacyMode ? '****' : (fund.amount ? fund.amount.toFixed(2) : '--') }}</text>
 					</view>
 					<view class="extra-item" v-if="showCostRate">
 						<text class="label">持有收益率</text>
-						<text class="value" :class="{ 'red': parseFloat(fund.costGainsRate) >= 0, 'green': parseFloat(fund.costGainsRate) < 0 }">
-							{{ fund.costGainsRate !== undefined ? (parseFloat(fund.costGainsRate) >= 0 ? '+' : '') + fund.costGainsRate + '%' : '--' }}
+						<text class="value" :class="{ 'red': !privacyMode && parseFloat(fund.costGainsRate) >= 0, 'green': !privacyMode && parseFloat(fund.costGainsRate) < 0 }">
+							{{ privacyMode ? '****' : (fund.costGainsRate !== undefined ? (parseFloat(fund.costGainsRate) >= 0 ? '+' : '') + fund.costGainsRate + '%' : '--') }}
 						</text>
 					</view>
 				</view>
@@ -238,6 +242,8 @@ export default {
 			sortOrderKeyRange: ['desc', 'asc'],
 			sortTypeIndex: 0,
 			sortOrderIndex: 0,
+			// 隐私模式
+			privacyMode: false,
 			// 设置分组
 			showMoveGroup: false,
 			moveFund: null,
@@ -320,6 +326,9 @@ export default {
 			this.sortTypeIndex = ti >= 0 ? ti : 0;
 			const oi = this.sortOrderKeyRange.indexOf(this.sortOrder);
 			this.sortOrderIndex = oi >= 0 ? oi : 0;
+		},
+		togglePrivacyMode() {
+			this.privacyMode = !this.privacyMode;
 		},
 		selectGroup(groupId) {
 			this.currentGroupId = groupId;
@@ -572,7 +581,7 @@ export default {
 		showImportTutorial() {
 			const prompt = '请识别图片中的基金持仓信息（基金代码、基金名称、持有份额、持仓成本价），并严格按以下 JSON 格式输出，不要包含任何多余文字：';
 			const exampleJson = `{"fundList":[{"code":"000001","name":"基金名称示例","num":1234.56,"cost":1.0245}]}`;
-			const content = '1. 截图你的基金持仓界面\n2. 发给豆包/DeepSeek，让它按提示词输出JSON\n3. 复制AI输出的JSON\n4. 打开"设置"→"新增/导入配置"导入';
+			const content = '① 截图持仓界面\n \n② 点击"复制"获取提示词\n\n③ 发送截图+提示词给豆包/DeepSeek\n\n④ 复制AI返回的JSON\n\n⑤ "设置"→"新增/导入配置"导入';
 
 			uni.showModal({
 				title: '一键导入教程',
@@ -720,6 +729,11 @@ export default {
 		.right-tools {
 			display: flex;
 			align-items: center;
+		}
+
+		.privacy-switch {
+			margin-right: 14rpx;
+			transform: scale(0.7);
 		}
 
 		.update-badge {
