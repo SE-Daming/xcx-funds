@@ -5,6 +5,8 @@
 			id="pieChart"
 			class="pie-canvas"
 			@touchstart="onTouchStart"
+			@touchend="onTouchEnd"
+			@touchcancel="onTouchEnd"
 		></canvas>
 		<!-- 图例 - 可滚动 -->
 		<scroll-view class="legend-list" scroll-y>
@@ -16,8 +18,8 @@
 				</view>
 			</view>
 		</scroll-view>
-		<!-- 触摸提示 - 跟随位置 -->
-		<cover-view class="touch-tip" v-if="showTip" :style="{ left: tipX + 'px', top: tipY + 'px' }">
+		<!-- 触摸提示 - 固定在饼图中间 -->
+		<cover-view class="touch-tip" v-if="showTip">
 			<cover-view class="tip-content">
 				<cover-view class="tip-name">{{ tipName }}</cover-view>
 				<cover-view class="tip-value">¥{{ tipAmount }}</cover-view>
@@ -48,8 +50,6 @@ export default {
 			tipName: '',
 			tipAmount: '',
 			tipPercent: '',
-			tipX: 0,
-			tipY: 0,
 			// 颜色列表
 			colors: [
 				'#2979ff', '#19be6b', '#ff9900', '#ed4014', '#9c27b0',
@@ -186,12 +186,12 @@ export default {
 				// 处理角度跨越的情况
 				if (end > Math.PI) {
 					if (angle >= start || angle <= end - Math.PI * 2) {
-						this.showTipInfo(slice.data, touch.x, touch.y);
+						this.showTipInfo(slice.data);
 						return;
 					}
 				} else {
 					if (angle >= start && angle < end) {
-						this.showTipInfo(slice.data, touch.x, touch.y);
+						this.showTipInfo(slice.data);
 						return;
 					}
 				}
@@ -199,14 +199,14 @@ export default {
 
 			this.showTip = false;
 		},
-		showTipInfo(data, x, y) {
+		showTipInfo(data) {
 			this.showTip = true;
 			this.tipName = data.name;
 			this.tipAmount = data.amount.toFixed(2);
 			this.tipPercent = data.percent;
-			// 提示框跟随触摸位置，稍微偏移避免遮挡
-			this.tipX = Math.min(Math.max(x, 80), 240);
-			this.tipY = Math.max(y - 80, 10);
+		},
+		onTouchEnd() {
+			this.showTip = false;
 		},
 		onLegendClick(item) {
 			if (item.code) {
@@ -221,6 +221,7 @@ export default {
 .pie-chart-box {
 	width: 100%;
 	padding: 20rpx 0;
+	position: relative;
 }
 
 .pie-canvas {
@@ -281,9 +282,12 @@ export default {
 }
 
 .touch-tip {
-	position: fixed;
+	position: absolute;
+	left: 50%;
+	top: 100px;
+	transform: translate(-50%, -50%);
 	pointer-events: none;
-	transform: translateX(-50%);
+	z-index: 10;
 
 	.tip-content {
 		background-color: rgba(0, 0, 0, 0.85);
