@@ -11,15 +11,13 @@
 		<view class="no-data" v-if="!data || data.length === 0">
 			<text>暂无走势数据</text>
 		</view>
-		<!-- 触摸提示 -->
-		<view class="touch-tip" v-if="showTip">
-			<view class="tip-content">
-				<text class="tip-value" :style="{ color: tipColorComputed }">{{ tipValue }}</text>
-				<text class="tip-label">{{ tipLabel }}</text>
-			</view>
-			<view class="tip-line" :style="{ left: tipLineLeft + 'px' }"></view>
-			<view class="tip-dot" :style="{ left: tipDotLeft + 'px', top: tipDotTop + 'px' }"></view>
-		</view>
+		<!-- 触摸提示 - 使用 cover-view 覆盖 canvas -->
+		<cover-view class="touch-tip" v-if="showTip">
+			<cover-view class="tip-content">
+				<cover-view class="tip-value" :style="{ color: tipColorComputed }">{{ tipValue }}</cover-view>
+				<cover-view class="tip-label">{{ tipLabel }}</cover-view>
+			</cover-view>
+		</cover-view>
 	</view>
 </template>
 
@@ -139,21 +137,38 @@ export default {
 			}
 			ctx.stroke();
 
-			// X轴文字 - 智能分布标签
-			if (labels.length > 0) {
+			// X轴文字 - 显示首、中、尾三个日期
+			if (labels.length > 0 && data.length > 0) {
 				ctx.setFillStyle('#999999');
 				ctx.setFontSize(10);
 
-				const maxLabels = Math.min(5, labels.length);
+				const chartWidth = width - padding.left - padding.right;
 
-				for (let i = 0; i < maxLabels; i++) {
-					const dataIndex = Math.round(i * (labels.length - 1) / (maxLabels - 1));
-					const label = labels[dataIndex] || '';
+				// 固定显示3个标签：起始、中间、结束
+				const indices = [0, Math.floor((data.length - 1) / 2), data.length - 1];
+
+				indices.forEach(dataIndex => {
+					let label = labels[dataIndex] || '';
+
+					// 如果该位置没有标签，尝试从附近查找
+					if (!label) {
+						for (let j = dataIndex - 1; j >= 0; j--) {
+							if (labels[j]) { label = labels[j]; break; }
+						}
+						if (!label) {
+							for (let j = dataIndex + 1; j < labels.length; j++) {
+								if (labels[j]) { label = labels[j]; break; }
+							}
+						}
+					}
+
+					if (!label) return;
+
 					const x = padding.left + dataIndex * (chartWidth / (data.length - 1));
 					const textWidth = label.length * 6;
 					const textX = Math.max(padding.left, Math.min(x - textWidth / 2, width - padding.right - textWidth));
 					ctx.fillText(label, textX, height - 10);
-				}
+				});
 			}
 
 			// 绘制折线并缓存坐标点
@@ -316,52 +331,29 @@ export default {
 
 .touch-tip {
 	position: absolute;
-	top: 0;
+	top: 10rpx;
 	left: 0;
 	right: 0;
-	bottom: 0;
+	display: flex;
+	justify-content: center;
 	pointer-events: none;
 
 	.tip-content {
-		position: absolute;
-		top: 10rpx;
-		left: 50%;
-		transform: translateX(-50%);
-		background-color: rgba(0, 0, 0, 0.75);
+		background-color: rgba(0, 0, 0, 0.85);
 		padding: 12rpx 24rpx;
 		border-radius: 10rpx;
 		text-align: center;
-		white-space: nowrap;
 
 		.tip-value {
 			font-size: 30rpx;
 			font-weight: bold;
-			display: block;
 		}
 
 		.tip-label {
 			font-size: 24rpx;
 			color: #fff;
-			opacity: 0.85;
 			margin-top: 4rpx;
 		}
-	}
-
-	.tip-line {
-		position: absolute;
-		top: 60rpx;
-		width: 1px;
-		height: calc(100% - 120rpx);
-		background-color: rgba(0, 0, 0, 0.3);
-	}
-
-	.tip-dot {
-		position: absolute;
-		width: 12rpx;
-		height: 12rpx;
-		border-radius: 50%;
-		background-color: #fff;
-		border: 2rpx solid #2979ff;
 	}
 }
 </style>
