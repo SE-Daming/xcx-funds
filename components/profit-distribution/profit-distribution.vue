@@ -87,17 +87,17 @@ export default {
 		currentList() {
 			return this.activeTab === 'total' ? this.fundList : this.fundListToday;
 		},
-		// 盈利列表 - 按持仓金额降序
+		// 盈利列表 - 按盈亏金额降序（贡献最多）
 		profitList() {
 			return this.currentList
 				.filter(f => f.costGains > 0)
-				.sort((a, b) => (b.amount || 0) - (a.amount || 0));
+				.sort((a, b) => (b.costGains || 0) - (a.costGains || 0));
 		},
-		// 亏损列表 - 按持仓金额降序
+		// 亏损列表 - 按盈亏金额升序（拖累最多）
 		lossList() {
 			return this.currentList
 				.filter(f => f.costGains < 0)
-				.sort((a, b) => (b.amount || 0) - (a.amount || 0));
+				.sort((a, b) => (a.costGains || 0) - (b.costGains || 0));
 		},
 		// 显示的盈利列表
 		displayProfitList() {
