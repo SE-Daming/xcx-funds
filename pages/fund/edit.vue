@@ -42,6 +42,20 @@
 				</view>
 			</view>
 
+			<!-- 备注 -->
+			<view class="form-item remark-item">
+				<view class="label">备注</view>
+				<textarea
+					class="textarea"
+					placeholder="记录买入理由、止盈策略、定投计划等..."
+					v-model="formData.remark"
+					maxlength="500"
+					:auto-height="true"
+					:show-confirm-bar="false"
+				></textarea>
+				<view class="remark-count">{{ formData.remark ? formData.remark.length : 0 }}/500</view>
+			</view>
+
 			<view class="form-item" v-if="formData.num && formData.cost">
 				<view class="label">持有总值</view>
 				<view class="readonly-value">{{ calculatedAmount }}</view>
@@ -94,7 +108,8 @@ export default {
 			},
 			formData: {
 				num: '',
-				cost: ''
+				cost: '',
+				remark: ''
 			},
 			calculatedAmount: null,
 			calculatedHoldGains: null,
@@ -183,7 +198,8 @@ export default {
 					// 初始化表单数据
 					this.formData = {
 						num: localFund ? localFund.num : '',
-						cost: localFund ? localFund.cost : ''
+						cost: localFund ? localFund.cost : '',
+						remark: localFund ? (localFund.remark || '') : ''
 					};
 				} else {
 					// 如果API获取失败，尝试从本地获取
@@ -191,7 +207,8 @@ export default {
 						this.fund = localFund;
 						this.formData = {
 							num: localFund.num || '',
-							cost: localFund.cost || ''
+							cost: localFund.cost || '',
+							remark: localFund.remark || ''
 						};
 					} else {
 						// 创建一个新的基金记录
@@ -247,7 +264,8 @@ export default {
 			const updateData = {
 				num: this.formData.num,
 				cost: this.formData.cost,
-				groupIds: [...this.selectedGroupIds]
+				groupIds: [...this.selectedGroupIds],
+				remark: this.formData.remark || ''
 			};
 
 			DataManager.updateFund(this.fundCode, updateData);
@@ -391,5 +409,30 @@ export default {
 .action-buttons .save-btn {
 	background-color: #3498db;
 	color: #fff;
+}
+
+/* 备注样式 */
+.form-section .form-item.remark-item {
+	.label {
+		margin-bottom: 16rpx;
+	}
+
+	.textarea {
+		width: 100%;
+		min-height: 160rpx;
+		padding: 20rpx;
+		border: 1rpx solid #ddd;
+		border-radius: 8rpx;
+		font-size: 28rpx;
+		line-height: 1.6;
+		background-color: #fafafa;
+	}
+
+	.remark-count {
+		text-align: right;
+		font-size: 22rpx;
+		color: #999;
+		margin-top: 10rpx;
+	}
 }
 </style>

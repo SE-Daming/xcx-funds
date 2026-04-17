@@ -69,7 +69,15 @@
 				</view>
 			</view>
 		</view>
-		
+
+		<!-- 备注卡片 -->
+		<view class="detail-card remark-card" v-if="fundDetail.remark">
+			<view class="card-title">备注</view>
+			<view class="remark-content">
+				<text>{{ fundDetail.remark }}</text>
+			</view>
+		</view>
+
 		<!-- 图表区域 -->
 		<view class="chart-card">
 			<view class="chart-header">
@@ -127,7 +135,8 @@ export default {
 				jzrq: '',
 				gztime: '',
 				num: 0,
-				cost: 0
+				cost: 0,
+				remark: ''
 			},
 			localFundInfo: null,
 			deviceId: '',
@@ -264,7 +273,8 @@ export default {
 						jzrq: apiFund.jzrq,
 						gztime: apiFund.gztime,
 						num: this.localFundInfo ? this.localFundInfo.num : 0,
-						cost: this.localFundInfo ? this.localFundInfo.cost : 0
+						cost: this.localFundInfo ? this.localFundInfo.cost : 0,
+						remark: this.localFundInfo ? (this.localFundInfo.remark || '') : ''
 					};
 				} else if (this.localFundInfo) {
 					// 如果API失败，至少显示本地信息
@@ -625,6 +635,20 @@ export default {
 			color: $uni-color-error;
 			border: 2rpx solid #ffebeb;
 		}
+	}
+}
+
+/* Remark Card */
+.remark-card {
+	.remark-content {
+		background-color: #f9faff;
+		border-radius: 8rpx;
+		padding: 20rpx;
+		font-size: 28rpx;
+		color: $uni-text-color;
+		line-height: 1.8;
+		white-space: pre-wrap;
+		word-break: break-all;
 	}
 }
 </style>

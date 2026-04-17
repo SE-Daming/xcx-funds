@@ -48,6 +48,17 @@
 			</view>
 		</view>
 
+		<!-- 备注（可选） -->
+		<view class="remark-section" v-if="selectedFunds.length > 0">
+			<view class="section-title">备注（可选，统一设置）</view>
+			<textarea
+				class="remark-input"
+				placeholder="可为新添加的藏品设置统一备注..."
+				v-model="commonRemark"
+				maxlength="500"
+			></textarea>
+		</view>
+
 		<view class="action-section" v-if="selectedFunds.length > 0">
 			<button class="submit-btn" @click="addSelectedFunds">添加选中藏品 ({{ selectedFunds.length }})</button>
 		</view>
@@ -65,7 +76,8 @@ export default {
 			searchResults: [],
 			selectedFunds: [],
 			groupList: [],
-			selectedGroupIds: []
+			selectedGroupIds: [],
+			commonRemark: ''
 		}
 	},
 	onLoad() {
@@ -163,7 +175,8 @@ export default {
 						name: selectedFund.name,
 						num: 0, // 默认持有份额为0
 						cost: 0, // 默认持仓成本为0
-						groupIds: [...this.selectedGroupIds] // 添加分组ID数组
+						groupIds: [...this.selectedGroupIds], // 添加分组ID数组
+						remark: this.commonRemark || '' // 添加备注
 					});
 				}
 			});
@@ -370,6 +383,31 @@ export default {
 				border-color: #3498db;
 			}
 		}
+	}
+}
+
+/* 备注输入样式 */
+.remark-section {
+	background-color: #fff;
+	border-radius: 10rpx;
+	padding: 20rpx;
+	margin-bottom: 20rpx;
+
+	.section-title {
+		font-size: 32rpx;
+		font-weight: bold;
+		margin-bottom: 20rpx;
+	}
+
+	.remark-input {
+		width: 100%;
+		min-height: 160rpx;
+		padding: 20rpx;
+		border: 1rpx solid #ddd;
+		border-radius: 8rpx;
+		font-size: 28rpx;
+		line-height: 1.6;
+		background-color: #fafafa;
 	}
 }
 

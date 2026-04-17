@@ -146,7 +146,9 @@ export default {
 										num: parseFloat(fund.num) || 0,
 										cost: parseFloat(fund.cost) || 0,
 										// 兼容新旧数据结构
-										groupIds: fund.groupIds || (fund.groupId ? [fund.groupId] : [])
+										groupIds: fund.groupIds || (fund.groupId ? [fund.groupId] : []),
+										// 保留备注字段
+										remark: fund.remark || ''
 									})).filter(f => f.code);
 
 									if (newSettings) {

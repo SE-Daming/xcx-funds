@@ -127,6 +127,10 @@
 						<view class="fund-code-row">
 							<text class="fund-code">{{ fund.code }}</text>
 							<text class="tag" v-if="fund.dwjz">价 {{ fund.dwjz }}</text>
+							<text class="remark-tag" v-if="fund.remark">📝</text>
+						</view>
+						<view class="fund-remark-row" v-if="fund.remark">
+							<text class="remark-preview">{{ fund.remark }}</text>
 						</view>
 					</view>
 
@@ -1123,12 +1127,32 @@ export default {
 						color: #909399;
 						border-radius: 4rpx;
 					}
+
+					.remark-tag {
+						font-size: 20rpx;
+						margin-left: 8rpx;
+					}
+				}
+
+				.fund-remark-row {
+					margin-top: 8rpx;
+
+					.remark-preview {
+						font-size: 22rpx;
+						color: #999;
+						display: -webkit-box;
+						-webkit-box-orient: vertical;
+						-webkit-line-clamp: 2;
+						overflow: hidden;
+						line-height: 1.5;
+					}
 				}
 			}
 
 			.fund-metrics {
 				text-align: right;
 				display: flex;
+				flex-shrink: 0;
 
 				.metric-item {
 					display: flex;
