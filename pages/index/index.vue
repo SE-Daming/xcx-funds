@@ -126,11 +126,7 @@
 						</view>
 						<view class="fund-code-row">
 							<text class="fund-code">{{ fund.code }}</text>
-							<text class="tag" v-if="fund.dwjz">价 {{ fund.dwjz }}</text>
-							<text class="remark-tag" v-if="fund.remark">📝</text>
-						</view>
-						<view class="fund-remark-row" v-if="fund.remark">
-							<text class="remark-preview">{{ fund.remark }}</text>
+								<text class="tag" v-if="fund.dwjz">价 {{ fund.dwjz }}</text>
 						</view>
 					</view>
 
@@ -169,6 +165,12 @@
 							{{ privacyMode ? '****' : (fund.costGainsRate !== undefined ? (parseFloat(fund.costGainsRate) >= 0 ? '+' : '') + fund.costGainsRate + '%' : '--') }}
 						</text>
 					</view>
+				</view>
+
+				<!-- 备注行 -->
+				<view class="card-note" v-if="fund.remark">
+					<text class="note-icon">📝</text>
+					<text class="note-text">{{ fund.remark }}</text>
 				</view>
 
 				<!-- 编辑模式覆盖层 -->
@@ -1200,6 +1202,31 @@ export default {
 					font-size: 24rpx;
 					font-weight: 500;
 				}
+			}
+		}
+
+		.card-note {
+			padding: 12rpx 24rpx;
+			background-color: #f8f9fa;
+			border-top: 1rpx solid #eee;
+			display: flex;
+			align-items: flex-start;
+
+			.note-icon {
+				font-size: 22rpx;
+				margin-right: 8rpx;
+				opacity: 0.6;
+			}
+
+			.note-text {
+				flex: 1;
+				font-size: 22rpx;
+				color: #999;
+				line-height: 1.5;
+				display: -webkit-box;
+				-webkit-box-orient: vertical;
+				-webkit-line-clamp: 1;
+				overflow: hidden;
 			}
 		}
 

@@ -107,10 +107,10 @@
 		</view>
 		
 		<!-- 底部操作栏 -->
-		<view class="bottom-actions">
-			<button class="action-btn edit" @click="editFund">编辑藏品</button>
-			<button class="action-btn delete" @click="deleteFund">删除藏品</button>
-		</view>
+		<cover-view class="bottom-actions">
+			<cover-view class="action-btn edit" @click="editFund">编辑藏品</cover-view>
+			<cover-view class="action-btn delete" @click="deleteFund">删除藏品</cover-view>
+		</cover-view>
 	</view>
 </template>
 
@@ -597,7 +597,7 @@ export default {
 	}
 }
 
-/* Bottom Actions */
+/* Bottom Actions - 使用 cover-view 覆盖 canvas */
 .bottom-actions {
 	position: fixed;
 	bottom: 0;
@@ -606,10 +606,9 @@ export default {
 	padding: 20rpx 30rpx;
 	padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
 	background-color: #fff;
-	box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
 	display: flex;
+	flex-direction: row;
 	justify-content: space-between;
-	z-index: 100;
 	
 	.action-btn {
 		flex: 1;
@@ -618,22 +617,18 @@ export default {
 		font-size: 30rpx;
 		height: 80rpx;
 		line-height: 80rpx;
-		border: none;
-		
-		&::after {
-			border: none;
-		}
+		text-align: center;
 		
 		&.edit {
-			background-color: $uni-color-primary;
+			background-color: #2979ff;
 			color: #fff;
-			box-shadow: 0 4rpx 12rpx rgba(41, 121, 255, 0.3);
 		}
 		
 		&.delete {
 			background-color: #fff;
-			color: $uni-color-error;
+			color: #ff4d4f;
 			border: 2rpx solid #ffebeb;
+			box-sizing: border-box;
 		}
 	}
 }
