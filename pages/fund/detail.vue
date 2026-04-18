@@ -71,10 +71,14 @@
 		</view>
 
 		<!-- 备注卡片 -->
-		<view class="detail-card remark-card" v-if="fundDetail.remark">
+		<view class="detail-card remark-card">
 			<view class="card-title">备注</view>
-			<view class="remark-content">
-				<text>{{ fundDetail.remark }}</text>
+			<view class="remark-content" v-if="fundDetail.remark" @click="showRemarkEdit">
+				<text class="remark-text">{{ fundDetail.remark }}</text>
+			</view>
+			<view class="remark-empty" v-else @click="showRemarkEdit">
+				<text class="empty-icon">📝</text>
+				<text class="empty-text">添加备注</text>
 			</view>
 		</view>
 
@@ -352,6 +356,12 @@ export default {
 						}, 1500);
 					}
 				}
+			});
+		},
+		showRemarkEdit() {
+			// 跳转到编辑页面，并标记为备注编辑模式
+			uni.navigateTo({
+				url: `/pages/fund/edit?code=${this.fundCode}&focus=remark`
 			});
 		}
 	}
@@ -644,6 +654,40 @@ export default {
 		line-height: 1.8;
 		white-space: pre-wrap;
 		word-break: break-all;
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+
+		.remark-text {
+			flex: 1;
+		}
+
+		.remark-edit-hint {
+			font-size: 22rpx;
+			color: #999;
+			margin-left: 16rpx;
+			flex-shrink: 0;
+		}
+	}
+
+	.remark-empty {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 30rpx 20rpx;
+		background-color: #f9faff;
+		border-radius: 8rpx;
+		border: 2rpx dashed #e0e0e0;
+
+		.empty-icon {
+			font-size: 28rpx;
+			margin-right: 10rpx;
+		}
+
+		.empty-text {
+			font-size: 28rpx;
+			color: #999;
+		}
 	}
 }
 </style>

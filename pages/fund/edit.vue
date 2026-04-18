@@ -52,6 +52,7 @@
 					maxlength="500"
 					:auto-height="true"
 					:show-confirm-bar="false"
+					:focus="focusRemark"
 				></textarea>
 				<view class="remark-count">{{ formData.remark ? formData.remark.length : 0 }}/500</view>
 			</view>
@@ -115,11 +116,16 @@ export default {
 			calculatedHoldGains: null,
 			deviceId: '',
 			groupList: [],
-			selectedGroupIds: []
+			selectedGroupIds: [],
+			focusRemark: false
 		}
 	},
 	onLoad(options) {
 		this.fundCode = options.code;
+		// 如果带 focus=remark 参数，自动聚焦备注输入框
+		if (options.focus === 'remark') {
+			this.focusRemark = true;
+		}
 		this.loadDeviceId();
 		this.loadGroupList();
 		this.loadFundDetail();
