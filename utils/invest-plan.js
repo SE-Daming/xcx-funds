@@ -74,6 +74,15 @@ function generateDailyDates(plan, startDate, endDateStr, tradingDaySet) {
   const dates = [];
   const tradingDays = Array.from(tradingDaySet).sort();
 
+  console.log('generateDailyDates 参数:', {
+    startDate: plan.startDate,
+    endDateStr: endDateStr,
+    lastInvestDate: plan.lastInvestDate,
+    tradingDaysCount: tradingDays.length,
+    firstTradingDay: tradingDays[0],
+    lastTradingDay: tradingDays[tradingDays.length - 1]
+  });
+
   for (const day of tradingDays) {
     if (day >= plan.startDate && day <= endDateStr) {
       if (!plan.lastInvestDate || day > plan.lastInvestDate) {
@@ -82,6 +91,8 @@ function generateDailyDates(plan, startDate, endDateStr, tradingDaySet) {
     }
   }
 
+  console.log('generateDailyDates 结果:', dates.length, '条');
+  console.log('定投日期列表:', dates);
   return dates;
 }
 
@@ -213,7 +224,13 @@ function generateMonthlyDates(plan, startDate, endDateStr, tradingDaySet) {
  * @returns {Array} 定投日期列表
  */
 export function generateInvestDates(plan, endDate, tradingDays) {
+  console.log('generateInvestDates 被调用');
+  console.log('plan:', JSON.stringify(plan));
+  console.log('endDate:', endDate);
+  console.log('tradingDays length:', tradingDays ? tradingDays.length : 0);
+
   if (!plan || !plan.startDate || !tradingDays || tradingDays.length === 0) {
+    console.log('generateInvestDates 参数校验失败，返回空数组');
     return [];
   }
 
@@ -222,6 +239,8 @@ export function generateInvestDates(plan, endDate, tradingDays) {
 
   // 确保 endDate 是字符串格式 YYYY-MM-DD
   const endStr = typeof endDate === 'string' ? endDate : formatDate(endDate);
+
+  console.log('plan.cycle:', plan.cycle);
 
   // 根据周期类型生成日期
   switch (plan.cycle) {
@@ -269,22 +288,25 @@ export function executeInvestment(plan, navHistory, existingRecords = []) {
   let totalShares = 0;
   let totalAmount = 0;
 
+  // 确保 amount 是数字类型
+  const investAmount = parseFloat(plan.amount) || 0;
+
   for (const date of investDates) {
     const nav = navMap.get(date);
     if (!nav || nav <= 0) continue;
 
     // 保留4位小数存储
-    const shares = parseFloat((plan.amount / nav).toFixed(4));
+    const shares = parseFloat((investAmount / nav).toFixed(4));
 
     newRecords.push({
       date,
-      amount: plan.amount,
+      amount: investAmount,
       nav: parseFloat(nav.toFixed(4)),
       shares
     });
 
     totalShares += shares;
-    totalAmount += plan.amount;
+    totalAmount += investAmount;
   }
 
   // 合并已有记录
@@ -315,9 +337,11 @@ export function calculateSummary(records, currentNav) {
     return null;
   }
 
-  const totalAmount = records.reduce((sum, r) => sum + r.amount, 0);
-  const totalShares = records.reduce((sum, r) => sum + r.shares, 0);
-  const currentValue = totalShares * currentNav;
+  // 使用 parseFloat 确保数值类型，避免字符串累加问题
+  const totalAmount = records.reduce((sum, r) => sum + parseFloat(r.amount), 0);
+  const totalShares = records.reduce((sum, r) => sum + parseFloat(r.shares), 0);
+  const currentNavNum = parseFloat(currentNav) || 0;
+  const currentValue = totalShares * currentNavNum;
   const avgCost = totalShares > 0 ? totalAmount / totalShares : 0;
   const profit = currentValue - totalAmount;
   const profitRate = totalAmount > 0 ? (profit / totalAmount * 100) : 0;

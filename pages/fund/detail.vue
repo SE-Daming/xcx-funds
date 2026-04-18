@@ -148,7 +148,9 @@
 					</view>
 					<view class="debug-item">
 						<text class="debug-label">开始日期</text>
-						<text class="debug-value">{{ investPlan.startDate }}</text>
+						<picker mode="date" :end="today" :value="debugStartDate" @change="onDebugStartDateChange">
+							<view class="debug-picker">{{ debugStartDate }} ▼</view>
+						</picker>
 					</view>
 					<view class="debug-item">
 						<text class="debug-label">上次执行</text>
@@ -277,10 +279,12 @@ export default {
 			recordsCurrentPage: 1,
 			// 调试相关
 			showDebugPanel: false,
+			debugStartDate: '',
 			debugEndDate: '',
 			debugResult: '',
 			syncClickCount: 0,
-			syncClickTimer: null
+			syncClickTimer: null,
+			today: ''
 		}
 	},
 	computed: {
@@ -496,7 +500,9 @@ export default {
 			this.syncClickTimer = setTimeout(() => {
 				if (this.syncClickCount >= 5) {
 					this.showDebugPanel = true;
+					this.debugStartDate = this.investPlan.startDate;
 					this.debugEndDate = this.investPlan.lastInvestDate || this.investPlan.startDate;
+					this.today = new Date().toISOString().slice(0, 10);
 					uni.showToast({ title: '调试模式已开启', icon: 'none' });
 				} else {
 					this.syncInvestment();
@@ -506,6 +512,9 @@ export default {
 		},
 		onDebugEndDateChange(e) {
 			this.debugEndDate = e.detail.value;
+		},
+		onDebugStartDateChange(e) {
+			this.debugStartDate = e.detail.value;
 		},
 		async runDebugSync() {
 			if (!this.investPlan) {
@@ -526,40 +535,68 @@ export default {
 				const tradingDays = navHistory.map(item => item.date);
 				const navMap = new Map(navHistory.map(item => [item.date, item.nav]));
 
-				// 创建模拟计划（临时修改截止日期）
-				const debugPlan = { ...this.investPlan };
+				// 创建模拟计划（临时修改开始日期）
+				const debugPlan = { ...this.investPlan, startDate: this.debugStartDate };
 
 				// 生成到指定日期的定投日期
 				// 检查截止日期是否在净值数据范围内
 				const lastNavDate = tradingDays[tradingDays.length - 1];
-				const firstNavDate = tradingDays[0];
 				const effectiveEndDate = this.debugEndDate > lastNavDate ? lastNavDate : this.debugEndDate;
 
 				// 生成到指定日期的定投日期
 				const investDates = generateInvestDates(debugPlan, effectiveEndDate, tradingDays);
 
 				// 计算每期份额
+				const investAmount = parseFloat(debugPlan.amount) || 0;
 				const newRecords = [];
 				for (const date of investDates) {
 					const nav = navMap.get(date);
 					if (!nav || nav <= 0) continue;
-					const shares = parseFloat((debugPlan.amount / nav).toFixed(4));
-					newRecords.push({ date, amount: debugPlan.amount, nav, shares });
+					const shares = parseFloat((investAmount / nav).toFixed(4));
+					newRecords.push({ date, amount: investAmount, nav, shares });
 				}
 
 				// 计算汇总
 				const currentNav = navMap.get(tradingDays[tradingDays - 1]) || 0;
 				const summary = calculateSummary(newRecords, currentNav);
 
-				// 显示结果
+
+				// 控制台输出详细记录
+				console.log('===== 定投模拟详细记录 =====');
+				console.log('日期\t\t净值\t\t投入\t份额');
+				newRecords.forEach(r => {
+					console.log(`${r.date}\t${r.nav.toFixed(4)}\t${r.amount}元\t${r.shares.toFixed(4)}份`);
+				});
+				console.log('=============================');
+
+				// 显示结果（显示前10条和后5条）
+				const detailLines = [];
+				const showFirst = 10;
+				const showLast = 5;
+
+				for (let i = 0; i < Math.min(showFirst, newRecords.length); i++) {
+					const r = newRecords[i];
+					detailLines.push(`${r.date} | 净值${r.nav.toFixed(4)} | 投入${r.amount}元 | 买入${r.shares.toFixed(2)}份`);
+				}
+				if (newRecords.length > showFirst + showLast) {
+					detailLines.push(`... 省略 ${newRecords.length - showFirst - showLast} 条 ...`);
+				}
+				if (newRecords.length > showFirst) {
+					for (let i = Math.max(showFirst, newRecords.length - showLast); i < newRecords.length; i++) {
+						const r = newRecords[i];
+						detailLines.push(`${r.date} | 净值${r.nav.toFixed(4)} | 投入${r.amount}元 | 买入${r.shares.toFixed(2)}份`);
+					}
+				}
+
 				const resultLines = [
 					`生成 ${investDates.length} 个定投日期`,
 					`有效记录 ${newRecords.length} 条`,
 					`累计投入 ${summary ? summary.totalAmount : 0} 元`,
 					`累计份额 ${summary ? summary.totalShares.toFixed(2) : 0} 份`,
 					`定投均价 ${summary ? summary.avgCost.toFixed(4) : 0} 元`,
-					`首条记录: ${newRecords[0]?.date || '无'}`,
-					`末条记录: ${newRecords[newRecords.length - 1]?.date || '无'}`
+					``,
+					`【详细记录】`,
+					...detailLines
 				];
 				this.debugResult = resultLines.join('\n');
 
