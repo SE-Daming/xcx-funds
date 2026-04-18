@@ -127,9 +127,41 @@
 
 			<!-- 同步定投按钮 -->
 			<view class="sync-btn-wrapper" v-if="investPlan.status === 'active'">
-				<view class="sync-btn" :class="{ 'loading': syncLoading }" @click="syncInvestment">
+				<view class="sync-btn" :class="{ 'loading': syncLoading }" @click="onSyncBtnClick">
 					<text v-if="!syncLoading">同步定投</text>
 					<text v-else>同步中...</text>
+				</view>
+			</view>
+
+			<!-- 调试面板 -->
+			<view class="debug-panel" v-if="showDebugPanel">
+				<view class="debug-header">
+					<text class="debug-title">🔧 调试模式</text>
+					<text class="debug-close" @click="showDebugPanel = false">✕</text>
+				</view>
+				<view class="debug-content">
+					<view class="debug-item">
+						<text class="debug-label">模拟截止日期</text>
+						<picker mode="date" :value="debugEndDate" @change="onDebugEndDateChange">
+							<view class="debug-picker">{{ debugEndDate }} ▼</view>
+						</picker>
+					</view>
+					<view class="debug-item">
+						<text class="debug-label">开始日期</text>
+						<text class="debug-value">{{ investPlan.startDate }}</text>
+					</view>
+					<view class="debug-item">
+						<text class="debug-label">上次执行</text>
+						<text class="debug-value">{{ investPlan.lastInvestDate || '无' }}</text>
+					</view>
+					<view class="debug-actions">
+						<view class="debug-btn" @click="runDebugSync">模拟同步</view>
+						<view class="debug-btn warning" @click="resetInvestPlan">重置计划</view>
+					</view>
+					<view class="debug-result" v-if="debugResult">
+						<text class="debug-result-title">模拟结果：</text>
+						<text class="debug-result-text">{{ debugResult }}</text>
+					</view>
 				</view>
 			</view>
 
@@ -242,7 +274,13 @@ export default {
 			syncLoading: false,
 			recordsExpanded: false,
 			recordsPageSize: 20,
-			recordsCurrentPage: 1
+			recordsCurrentPage: 1,
+			// 调试相关
+			showDebugPanel: false,
+			debugEndDate: '',
+			debugResult: '',
+			syncClickCount: 0,
+			syncClickTimer: null
 		}
 	},
 	computed: {
@@ -449,6 +487,100 @@ export default {
 			this.loadChartData(this.fundCode);
 		},
 		// 定投相关方法
+		onSyncBtnClick() {
+			// 连击检测，5次开启调试模式
+			this.syncClickCount++;
+			if (this.syncClickTimer) {
+				clearTimeout(this.syncClickTimer);
+			}
+			this.syncClickTimer = setTimeout(() => {
+				if (this.syncClickCount >= 5) {
+					this.showDebugPanel = true;
+					this.debugEndDate = this.investPlan.lastInvestDate || this.investPlan.startDate;
+					uni.showToast({ title: '调试模式已开启', icon: 'none' });
+				} else {
+					this.syncInvestment();
+				}
+				this.syncClickCount = 0;
+			}, 500);
+		},
+		onDebugEndDateChange(e) {
+			this.debugEndDate = e.detail.value;
+		},
+		async runDebugSync() {
+			if (!this.investPlan) {
+				uni.showToast({ title: '无定投计划', icon: 'none' });
+				return;
+			}
+
+			this.debugResult = '模拟中...';
+
+			try {
+				const navHistory = await getFundHistoryNav(this.fundCode, 'n');
+				if (!navHistory || navHistory.length === 0) {
+					this.debugResult = '无法获取历史净值';
+					return;
+				}
+
+				// 使用 generateInvestDates 计算日期
+				const { generateInvestDates, calculateSummary } = require('@/utils/invest-plan.js');
+				const tradingDays = navHistory.map(item => item.date);
+				const navMap = new Map(navHistory.map(item => [item.date, item.nav]));
+
+				// 创建模拟计划（临时修改截止日期）
+				const debugPlan = { ...this.investPlan };
+
+				// 生成到指定日期的定投日期
+				const investDates = generateInvestDates(debugPlan, this.debugEndDate, tradingDays);
+
+				// 计算每期份额
+				const newRecords = [];
+				for (const date of investDates) {
+					const nav = navMap.get(date);
+					if (!nav || nav <= 0) continue;
+					const shares = parseFloat((debugPlan.amount / nav).toFixed(4));
+					newRecords.push({ date, amount: debugPlan.amount, nav, shares });
+				}
+
+				// 计算汇总
+				const currentNav = navMap.get(tradingDays[tradingDays - 1]) || 0;
+				const summary = calculateSummary(newRecords, currentNav);
+
+				// 显示结果
+				const resultLines = [
+					`生成 ${investDates.length} 个定投日期`,
+					`有效记录 ${newRecords.length} 条`,
+					`累计投入 ${summary ? summary.totalAmount : 0} 元`,
+					`累计份额 ${summary ? summary.totalShares.toFixed(2) : 0} 份`,
+					`定投均价 ${summary ? summary.avgCost.toFixed(4) : 0} 元`,
+					`首条记录: ${newRecords[0]?.date || '无'}`,
+					`末条记录: ${newRecords[newRecords.length - 1]?.date || '无'}`
+				];
+				this.debugResult = resultLines.join('\n');
+
+			} catch (e) {
+				console.error('调试同步失败:', e);
+				this.debugResult = '模拟失败: ' + e.message;
+			}
+		},
+		resetInvestPlan() {
+			uni.showModal({
+				title: '重置定投计划',
+				content: '确定要重置吗？将清空 lastInvestDate 和所有记录。',
+				confirmColor: '#ff4d4f',
+				success: (res) => {
+					if (res.confirm) {
+						this.investPlan.lastInvestDate = null;
+						this.investRecords = [];
+						this.investSummary = null;
+						DataManager.updateInvestPlan(this.fundCode, this.investPlan);
+						DataManager.updateInvestRecords(this.fundCode, []);
+						uni.showToast({ title: '已重置', icon: 'success' });
+						this.debugResult = '计划已重置，lastInvestDate 已清空';
+					}
+				}
+			});
+		},
 		async syncInvestment() {
 			if (this.syncLoading) return;
 
@@ -1077,6 +1209,117 @@ export default {
 		font-size: 26rpx;
 		border: 1rpx solid #ff4d4f;
 		border-radius: 8rpx;
+	}
+}
+
+/* 调试面板样式 */
+.debug-panel {
+	margin-top: 20rpx;
+	background-color: #fffbe6;
+	border: 2rpx solid #ffe58f;
+	border-radius: 12rpx;
+	overflow: hidden;
+
+	.debug-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 16rpx 20rpx;
+		background-color: #fff7e6;
+		border-bottom: 1rpx solid #ffe58f;
+
+		.debug-title {
+			font-size: 28rpx;
+			font-weight: bold;
+			color: #d48806;
+		}
+
+		.debug-close {
+			font-size: 28rpx;
+			color: #999;
+			padding: 0 10rpx;
+		}
+	}
+
+	.debug-content {
+		padding: 20rpx;
+
+		.debug-item {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 12rpx 0;
+			border-bottom: 1rpx solid #fff1cc;
+
+			&:last-child {
+				border-bottom: none;
+			}
+
+			.debug-label {
+				font-size: 26rpx;
+				color: #666;
+			}
+
+			.debug-value {
+				font-size: 26rpx;
+				color: #333;
+				font-weight: 500;
+			}
+
+			.debug-picker {
+				padding: 8rpx 16rpx;
+				background-color: #fff;
+				border: 1rpx solid #ddd;
+				border-radius: 6rpx;
+				font-size: 26rpx;
+				color: #333;
+			}
+		}
+
+		.debug-actions {
+			display: flex;
+			gap: 16rpx;
+			margin-top: 20rpx;
+
+			.debug-btn {
+				flex: 1;
+				padding: 16rpx;
+				text-align: center;
+				background-color: #3498db;
+				color: #fff;
+				border-radius: 8rpx;
+				font-size: 26rpx;
+
+				&.warning {
+					background-color: #fff;
+					color: #ff4d4f;
+					border: 1rpx solid #ff4d4f;
+				}
+			}
+		}
+
+		.debug-result {
+			margin-top: 20rpx;
+			padding: 16rpx;
+			background-color: #f6f6f6;
+			border-radius: 8rpx;
+
+			.debug-result-title {
+				display: block;
+				font-size: 24rpx;
+				color: #666;
+				margin-bottom: 8rpx;
+			}
+
+			.debug-result-text {
+				display: block;
+				font-size: 24rpx;
+				color: #333;
+				line-height: 1.8;
+				white-space: pre-wrap;
+				font-family: monospace;
+			}
+		}
 	}
 }
 </style>
