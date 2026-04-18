@@ -530,7 +530,13 @@ export default {
 				const debugPlan = { ...this.investPlan };
 
 				// 生成到指定日期的定投日期
-				const investDates = generateInvestDates(debugPlan, this.debugEndDate, tradingDays);
+				// 检查截止日期是否在净值数据范围内
+				const lastNavDate = tradingDays[tradingDays.length - 1];
+				const firstNavDate = tradingDays[0];
+				const effectiveEndDate = this.debugEndDate > lastNavDate ? lastNavDate : this.debugEndDate;
+
+				// 生成到指定日期的定投日期
+				const investDates = generateInvestDates(debugPlan, effectiveEndDate, tradingDays);
 
 				// 计算每期份额
 				const newRecords = [];
