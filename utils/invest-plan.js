@@ -70,12 +70,12 @@ export function findNextTradingDay(dateStr, tradingDaySet, maxAttempts = 10) {
  * @param {Set} tradingDaySet - 交易日集合
  * @returns {Array} 定投日期列表
  */
-function generateDailyDates(plan, startDate, endDate, tradingDaySet) {
+function generateDailyDates(plan, startDate, endDateStr, tradingDaySet) {
   const dates = [];
   const tradingDays = Array.from(tradingDaySet).sort();
 
   for (const day of tradingDays) {
-    if (day >= plan.startDate && day <= formatDate(endDate)) {
+    if (day >= plan.startDate && day <= endDateStr) {
       if (!plan.lastInvestDate || day > plan.lastInvestDate) {
         dates.push(day);
       }
@@ -89,13 +89,14 @@ function generateDailyDates(plan, startDate, endDate, tradingDaySet) {
  * 生成每周定投日期列表
  * @param {Object} plan - 定投计划
  * @param {Date} startDate - 开始日期
- * @param {Date} endDate - 截止日期
+ * @param {String} endDateStr - 截止日期字符串 YYYY-MM-DD
  * @param {Set} tradingDaySet - 交易日集合
  * @returns {Array} 定投日期列表
  */
-function generateWeeklyDates(plan, startDate, endDate, tradingDaySet) {
+function generateWeeklyDates(plan, startDate, endDateStr, tradingDaySet) {
   const dates = [];
   const targetDay = plan.dayOfWeek; // 1-5 表示周一到周五
+  const endDate = new Date(endDateStr);
 
   // 找到开始日期之后的第一个目标周几
   let current = new Date(startDate);
@@ -121,7 +122,7 @@ function generateWeeklyDates(plan, startDate, endDate, tradingDaySet) {
       } else {
         // 非交易日顺延到下一个交易日
         const nextTradingDay = findNextTradingDay(dateStr, tradingDaySet);
-        if (nextTradingDay && nextTradingDay <= formatDate(endDate)) {
+        if (nextTradingDay && nextTradingDay <= endDateStr) {
           // 检查顺延后的日期是否已经跨到下一周（超过7天）
           const nextDate = new Date(nextTradingDay);
           const daysDiff = Math.floor((nextDate - current) / (1000 * 60 * 60 * 24));
@@ -143,25 +144,21 @@ function generateWeeklyDates(plan, startDate, endDate, tradingDaySet) {
  * 生成每月定投日期列表
  * @param {Object} plan - 定投计划
  * @param {Date} startDate - 开始日期
- * @param {Date} endDate - 截止日期
+ * @param {String} endDateStr - 截止日期字符串 YYYY-MM-DD
  * @param {Set} tradingDaySet - 交易日集合
  * @returns {Array} 定投日期列表
  */
-function generateMonthlyDates(plan, startDate, endDate, tradingDaySet) {
+function generateMonthlyDates(plan, startDate, endDateStr, tradingDaySet) {
   const dates = [];
   const targetDay = plan.dayOfMonth; // 1-28
+  const endDate = new Date(endDateStr);
 
   // 从开始日期的月份开始
   let year = startDate.getFullYear();
   let month = startDate.getMonth();
 
-  // 如果开始日期在该月目标日之后，从下个月开始
-  const startDay = startDate.getDate();
-  const startMonth = startDate.getMonth();
-  const startYear = startDate.getFullYear();
-
   // 判断是否需要从开始月份的下一个目标日开始
-  const firstTargetDate = new Date(startYear, startMonth, targetDay);
+  const firstTargetDate = new Date(year, month, targetDay);
   if (firstTargetDate < startDate) {
     // 开始日期已过本月目标日，从下月开始
     month++;
@@ -189,7 +186,7 @@ function generateMonthlyDates(plan, startDate, endDate, tradingDaySet) {
         if (nextTradingDay) {
           const nextDate = new Date(nextTradingDay);
           // 检查是否跨月
-          if (nextDate.getMonth() === month && nextDate <= endDate) {
+          if (nextDate.getMonth() === month && nextTradingDay <= endDateStr) {
             dates.push(nextTradingDay);
           }
           // 跨月则跳过本月
@@ -222,16 +219,18 @@ export function generateInvestDates(plan, endDate, tradingDays) {
 
   const tradingDaySet = new Set(tradingDays);
   const startDate = new Date(plan.startDate);
-  const end = new Date(endDate);
+
+  // 确保 endDate 是字符串格式 YYYY-MM-DD
+  const endStr = typeof endDate === 'string' ? endDate : formatDate(endDate);
 
   // 根据周期类型生成日期
   switch (plan.cycle) {
     case 'daily':
-      return generateDailyDates(plan, startDate, end, tradingDaySet);
+      return generateDailyDates(plan, startDate, endStr, tradingDaySet);
     case 'weekly':
-      return generateWeeklyDates(plan, startDate, end, tradingDaySet);
+      return generateWeeklyDates(plan, startDate, endStr, tradingDaySet);
     case 'monthly':
-      return generateMonthlyDates(plan, startDate, end, tradingDaySet);
+      return generateMonthlyDates(plan, startDate, endStr, tradingDaySet);
     default:
       return [];
   }
