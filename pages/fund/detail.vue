@@ -234,7 +234,7 @@
 <script>
 import { getFundData, getFundHistoryNav } from '@/utils/fund-api.js';
 import { DataManager } from '@/utils/data-manager.js';
-import { executeInvestment, calculateSummary, mergeToHolding } from '@/utils/invest-plan.js';
+import { executeInvestment, calculateSummary, mergeToHolding, generateInvestDates } from '@/utils/invest-plan.js';
 import FundChart from '@/components/fund-chart/fund-chart.vue';
 
 export default {
@@ -522,8 +522,7 @@ export default {
 					return;
 				}
 
-				// 使用 generateInvestDates 计算日期
-				const { generateInvestDates, calculateSummary } = require('@/utils/invest-plan.js');
+				// 使用已导入的函数计算日期
 				const tradingDays = navHistory.map(item => item.date);
 				const navMap = new Map(navHistory.map(item => [item.date, item.nav]));
 
