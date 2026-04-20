@@ -692,31 +692,41 @@ export default {
 		loadMoreRecords() {
 			this.recordsCurrentPage++;
 		},
-		clearInvestRecords() {
-			uni.showModal({
-				title: '清空定投记录',
-				content: `确定要清空全部${this.investRecords.length}条定投记录吗？清空后份额将从持仓中扣除。`,
-				confirmColor: '#ff4d4f',
-				success: (res) => {
-					if (res.confirm) {
-						const result = DataManager.clearInvestRecords(this.fundCode);
-						if (result) {
-							uni.showToast({
-								title: `已扣除${result.deductedShares}份`,
-								icon: 'success'
-							});
+			clearInvestRecords() {
+				uni.showModal({
+					title: '清空定投记录',
+					content: `确定要清空全部${this.investRecords.length}条定投记录吗？清空后份额将从持仓中扣除。`,
+					confirmColor: '#ff4d4f',
+					success: (res) => {
+						if (res.confirm) {
+							const result = DataManager.clearInvestRecords(this.fundCode);
+							console.log('清空前 lastInvestDate:', this.investPlan?.lastInvestDate);
 
-							// 更新界面
-							this.investRecords = [];
-							this.investSummary = null;
-							this.fundDetail.num = Math.max(0, this.fundDetail.num - result.deductedShares);
+							if (result) {
+								// 同时清空 lastInvestDate，允许重新同步
+								if (this.investPlan) {
+									this.investPlan.lastInvestDate = null;
+								}
+								DataManager.updateInvestPlan(this.fundCode, this.investPlan);
 
-							uni.$emit('fundUpdated', { fundCode: this.fundCode });
+								console.log('清空后 lastInvestDate:', this.investPlan?.lastInvestDate);
+
+								uni.showToast({
+									title: `已扣除${result.deductedShares}份`,
+									icon: 'success'
+								});
+
+								// 更新界面
+								this.investRecords = [];
+								this.investSummary = null;
+								this.fundDetail.num = Math.max(0, this.fundDetail.num - result.deductedShares);
+
+								uni.$emit('fundUpdated', { fundCode: this.fundCode });
+							}
 						}
 					}
-				}
-			});
-		},
+				});
+			},
 		editFund() {
 			uni.navigateTo({
 				url: `/pages/fund/edit?code=${this.fundCode}`
