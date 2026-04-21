@@ -127,6 +127,10 @@
 
 			<!-- 同步定投按钮 -->
 			<view class="sync-btn-wrapper" v-if="investPlan.status === 'active'">
+				<view class="sync-hint" v-if="syncHint">
+					<text>{{ syncHint }}</text>
+					<text class="pending-badge" v-if="pendingSyncCount > 0">待同步 {{ pendingSyncCount }} 期</text>
+				</view>
 				<view class="sync-btn" :class="{ 'loading': syncLoading }" @click="onSyncBtnClick">
 					<text v-if="!syncLoading">同步定投</text>
 					<text v-else>同步中...</text>
@@ -284,7 +288,9 @@ export default {
 			debugResult: '',
 			syncClickCount: 0,
 			syncClickTimer: null,
-			today: ''
+			today: '',
+			// 交易日列表，用于精确计算待同步期数
+			tradingDays: []
 		}
 	},
 	computed: {
@@ -317,6 +323,44 @@ export default {
 		},
 		hasMoreRecords() {
 			return this.investRecords.length > this.recordsPageSize * this.recordsCurrentPage;
+		},
+		// 同步提示信息
+		syncHint() {
+			if (!this.investPlan || this.investPlan.status !== 'active') return '';
+
+			const lastDate = this.investPlan.lastInvestDate;
+			if (!lastDate) {
+				return '从未同步';
+			}
+
+			// 计算距离上次同步的天数
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			const last = new Date(lastDate);
+			last.setHours(0, 0, 0, 0);
+			const daysDiff = Math.floor((today - last) / (1000 * 60 * 60 * 24));
+
+			if (daysDiff === 0) {
+				return '今天已同步';
+			} else if (daysDiff === 1) {
+				return '上次同步：昨天';
+			} else if (daysDiff <= 7) {
+				return `上次同步：${daysDiff}天前`;
+			} else {
+				return `上次同步：${lastDate}`;
+			}
+		},
+		// 待同步期数（使用实际交易日和定投周期精确计算）
+		pendingSyncCount() {
+			if (!this.investPlan || this.investPlan.status !== 'active') return 0;
+			if (!this.tradingDays || this.tradingDays.length === 0) return 0;
+
+			const lastTradingDay = this.tradingDays[this.tradingDays.length - 1];
+
+			// 使用 generateInvestDates 根据定投周期生成正确的定投日期
+			const investDates = generateInvestDates(this.investPlan, lastTradingDay, this.tradingDays);
+
+			return investDates.length;
 		}
 	},
 	onLoad(options) {
@@ -415,6 +459,11 @@ export default {
 					if (this.investRecords.length > 0) {
 						this.updateInvestSummary();
 					}
+
+					// 如果有活跃的定投计划，预先加载交易日列表
+					if (this.investPlan && this.investPlan.status === 'active') {
+						this.loadTradingDays(code);
+					}
 				}
 
 				const result = await getFundData([code], this.deviceId);
@@ -460,6 +509,17 @@ export default {
 				this.investSummary = calculateSummary(this.investRecords, currentNav);
 			} else {
 				this.investSummary = null;
+			}
+		},
+		// 加载交易日列表（用于精确计算待同步期数）
+		async loadTradingDays(code) {
+			try {
+				const navHistory = await getFundHistoryNav(code, 'n');
+				if (navHistory && navHistory.length > 0) {
+					this.tradingDays = navHistory.map(item => item.date);
+				}
+			} catch (e) {
+				console.error('加载交易日列表失败:', e);
 			}
 		},
 		async loadChartData(code) {
@@ -1151,6 +1211,23 @@ export default {
 
 	.sync-btn-wrapper {
 		margin-top: 20rpx;
+
+		.sync-hint {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 12rpx;
+			font-size: 24rpx;
+			color: #666;
+
+			.pending-badge {
+				padding: 4rpx 12rpx;
+				background-color: #fff3cd;
+				color: #856404;
+				border-radius: 12rpx;
+				font-size: 22rpx;
+			}
+		}
 
 		.sync-btn {
 			padding: 20rpx;
