@@ -126,7 +126,7 @@
 			</view>
 
 			<!-- 同步定投按钮 -->
-			<view class="sync-btn-wrapper" v-if="investPlan.status === 'active'">
+			<view class="sync-btn-wrapper" v-if="investPlan.enabled">
 				<view class="sync-hint" v-if="syncHint">
 					<text>{{ syncHint }}</text>
 					<text class="pending-badge" v-if="pendingSyncCount > 0">待同步 {{ pendingSyncCount }} 期</text>
@@ -303,20 +303,15 @@ export default {
 			return '#2979ff';
 		},
 		hasInvestPlan() {
-			return this.investPlan && this.investPlan.status !== 'terminated';
+			return this.investPlan && this.investPlan.enabled;
 		},
 		investStatusLabel() {
 			if (!this.investPlan) return '';
-			const statusMap = {
-				'active': '进行中',
-				'paused': '已暂停',
-				'terminated': '已终止'
-			};
-			return statusMap[this.investPlan.status] || '';
+			return this.investPlan.enabled ? '进行中' : '未开启';
 		},
 		investStatusClass() {
 			if (!this.investPlan) return '';
-			return 'status-' + this.investPlan.status;
+			return this.investPlan.enabled ? 'status-active' : 'status-paused';
 		},
 		displayRecords() {
 			return this.investRecords.slice(0, this.recordsPageSize * this.recordsCurrentPage);
@@ -326,7 +321,7 @@ export default {
 		},
 		// 同步提示信息
 		syncHint() {
-			if (!this.investPlan || this.investPlan.status !== 'active') return '';
+			if (!this.investPlan || !this.investPlan.enabled) return '';
 
 			const lastDate = this.investPlan.lastInvestDate;
 			if (!lastDate) {
@@ -352,7 +347,7 @@ export default {
 		},
 		// 待同步期数（使用实际交易日和定投周期精确计算）
 		pendingSyncCount() {
-			if (!this.investPlan || this.investPlan.status !== 'active') return 0;
+			if (!this.investPlan || !this.investPlan.enabled) return 0;
 			if (!this.tradingDays || this.tradingDays.length === 0) return 0;
 
 			const lastTradingDay = this.tradingDays[this.tradingDays.length - 1];
@@ -460,8 +455,8 @@ export default {
 						this.updateInvestSummary();
 					}
 
-					// 如果有活跃的定投计划，预先加载交易日列表
-					if (this.investPlan && this.investPlan.status === 'active') {
+					// 如果有开启的定投计划，预先加载交易日列表
+					if (this.investPlan && this.investPlan.enabled) {
 						this.loadTradingDays(code);
 					}
 				}
@@ -686,7 +681,7 @@ export default {
 		async syncInvestment() {
 			if (this.syncLoading) return;
 
-			if (!this.investPlan || this.investPlan.status !== 'active') {
+			if (!this.investPlan || !this.investPlan.enabled) {
 				uni.showToast({ title: '定投计划未启用', icon: 'none' });
 				return;
 			}
@@ -1133,11 +1128,6 @@ export default {
 		&.status-paused {
 			background-color: #fff7e6;
 			color: #fa8c16;
-		}
-
-		&.status-terminated {
-			background-color: #f5f5f5;
-			color: #999;
 		}
 	}
 

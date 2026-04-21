@@ -562,11 +562,11 @@ export class DataManager {
   }
 
   /**
-   * 终止定投计划
+   * 删除定投计划（重置为未开启状态，保留份额）
    * @param {string} fundCode - 基金代码
-   * @returns {Boolean} 终止是否成功
+   * @returns {Boolean} 删除是否成功
    */
-  static terminateInvestPlan(fundCode) {
+  static deleteInvestPlan(fundCode) {
     try {
       const fundList = this.getFundList();
       const fundIndex = fundList.findIndex(item => item.code === fundCode);
@@ -576,16 +576,23 @@ export class DataManager {
       }
 
       const fund = fundList[fundIndex];
-      if (fund.investPlan) {
-        fund.investPlan.enabled = false;
-        fund.investPlan.status = 'terminated';
-        fund.investPlan.terminatedDate = new Date().toISOString().slice(0, 10);
-      }
+      // 重置定投计划为默认状态
+      fund.investPlan = {
+        enabled: false,
+        cycle: 'weekly',
+        amount: 100,
+        dayOfWeek: 1,
+        dayOfMonth: 1,
+        startDate: new Date().toISOString().slice(0, 10),
+        lastInvestDate: null
+      };
+      // 清空定投记录
+      fund.investRecords = [];
 
       uni.setStorageSync('fundList', fundList);
       return true;
     } catch (e) {
-      console.error('终止定投计划失败:', e);
+      console.error('删除定投计划失败:', e);
       return false;
     }
   }

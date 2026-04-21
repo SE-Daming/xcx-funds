@@ -89,14 +89,8 @@
 				<switch :checked="investPlan.enabled" @change="onInvestPlanSwitch" color="#3498db" />
 			</view>
 
-			<!-- 定投计划已终止提示 -->
-			<view class="plan-terminated-tip" v-if="investPlan.status === 'terminated'">
-				<text>该定投计划已终止，份额已保留在持仓中</text>
-				<view class="restart-btn" @click="restartInvestPlan">重新开启</view>
-			</view>
-
 			<!-- 定投计划表单 -->
-			<view class="invest-plan-form" v-if="investPlan.enabled && investPlan.status !== 'terminated'">
+			<view class="invest-plan-form" v-if="investPlan.enabled">
 				<!-- 定投周期 -->
 				<view class="form-item">
 					<view class="label">定投周期</view>
@@ -178,14 +172,9 @@
 				</view>
 			</view>
 
-			<!-- 暂停状态提示 -->
-			<view class="plan-paused-tip" v-if="!investPlan.enabled && investPlan.status === 'paused' && investPlan.lastInvestDate">
-				<text>定投已暂停，上次执行：{{ investPlan.lastInvestDate }}</text>
-			</view>
-
-			<!-- 终止定投按钮 -->
-			<view class="terminate-btn-wrapper" v-if="investPlan.status === 'active' || (investPlan.status === 'paused' && investPlan.lastInvestDate)">
-				<view class="terminate-btn" @click="terminateInvestPlan">终止定投</view>
+			<!-- 删除定投按钮（有定投记录时显示） -->
+			<view class="delete-invest-btn-wrapper" v-if="investRecords.length > 0">
+				<view class="delete-invest-btn" @click="deleteInvestPlan">删除定投</view>
 			</view>
 		</view>
 
@@ -384,23 +373,7 @@ export default {
 		},
 		// 定投相关方法
 		onInvestPlanSwitch(e) {
-			const enabled = e.detail.value;
-			this.investPlan.enabled = enabled;
-			if (enabled) {
-				// 开启定投
-				if (this.investPlan.status === 'terminated') {
-					// 从终止状态重新开启
-					this.investPlan.status = 'active';
-					this.investPlan.terminatedDate = null;
-				} else {
-					this.investPlan.status = 'active';
-				}
-			} else {
-				// 暂停定投
-				if (this.investPlan.status === 'active') {
-					this.investPlan.status = 'paused';
-				}
-			}
+			this.investPlan.enabled = e.detail.value;
 		},
 		selectCycle(cycle) {
 			if (this.investPlan.cycle !== cycle) {
@@ -418,29 +391,17 @@ export default {
 			const option = this.monthDayOptions.find(o => o.value === value);
 			return option ? option.label : '1号';
 		},
-		restartInvestPlan() {
+		deleteInvestPlan() {
 			uni.showModal({
-				title: '重新开启定投',
-				content: '确定要重新开启定投计划吗？将从上次执行日期继续。',
-				success: (res) => {
-					if (res.confirm) {
-						this.investPlan.enabled = true;
-						this.investPlan.status = 'active';
-						this.investPlan.terminatedDate = null;
-					}
-				}
-			});
-		},
-		terminateInvestPlan() {
-			uni.showModal({
-				title: '终止定投',
-				content: '终止后定投计划将停止，已累积的份额会保留在持仓中。确定要终止吗？',
+				title: '删除定投',
+				content: '删除后定投计划将清空，已累积的份额会保留在持仓中。确定要删除吗？',
 				confirmColor: '#ff4d4f',
 				success: (res) => {
 					if (res.confirm) {
-						this.investPlan.enabled = false;
-						this.investPlan.status = 'terminated';
-						this.investPlan.terminatedDate = getToday();
+						// 重置为默认定投计划（未开启状态）
+						this.investPlan = getDefaultInvestPlan();
+						// 清空定投记录
+						this.investRecords = [];
 					}
 				}
 			});
@@ -644,41 +605,6 @@ export default {
 		}
 	}
 
-	.plan-terminated-tip {
-		padding: 20rpx;
-		background-color: #fff3cd;
-		border-radius: 8rpx;
-		margin-top: 20rpx;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-
-		text {
-			font-size: 26rpx;
-			color: #856404;
-		}
-
-		.restart-btn {
-			padding: 10rpx 20rpx;
-			background-color: #3498db;
-			color: #fff;
-			border-radius: 20rpx;
-			font-size: 24rpx;
-		}
-	}
-
-	.plan-paused-tip {
-		padding: 16rpx;
-		background-color: #f5f5f5;
-		border-radius: 8rpx;
-		margin-top: 20rpx;
-
-		text {
-			font-size: 26rpx;
-			color: #666;
-		}
-	}
-
 	.invest-plan-form {
 		.cycle-options {
 			display: flex;
@@ -796,12 +722,12 @@ export default {
 		}
 	}
 
-	.terminate-btn-wrapper {
+	.delete-invest-btn-wrapper {
 		margin-top: 20rpx;
 		padding-top: 20rpx;
 		border-top: 1rpx solid #eee;
 
-		.terminate-btn {
+		.delete-invest-btn {
 			padding: 16rpx 0;
 			text-align: center;
 			color: #ff4d4f;

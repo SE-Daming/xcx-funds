@@ -408,14 +408,12 @@ export function getToday() {
 export function getDefaultInvestPlan() {
   return {
     enabled: false,
-    status: 'paused',
     cycle: 'weekly',
     amount: 100,
     dayOfWeek: 1,      // 默认周一
     dayOfMonth: 1,     // 默认每月1号
     startDate: getToday(),
-    lastInvestDate: null,
-    terminatedDate: null
+    lastInvestDate: null
   };
 }
 
