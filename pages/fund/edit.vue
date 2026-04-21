@@ -148,6 +148,7 @@
 							<text class="picker-arrow">▼</text>
 						</view>
 					</picker>
+					<text class="date-hint">可选范围：2025-12-01 至今天</text>
 				</view>
 
 				<!-- 开始日期 -->
@@ -159,6 +160,7 @@
 							<text class="picker-arrow">▼</text>
 						</view>
 					</picker>
+					<text class="date-hint">可选范围：2025-12-01 至今天</text>
 				</view>
 
 				<!-- 定投统计（已有记录时显示） -->
@@ -235,7 +237,7 @@ export default {
 			cycleOptions: CYCLE_OPTIONS,
 			weekDayOptions: WEEK_DAY_OPTIONS,
 			monthDayOptions: MONTH_DAY_OPTIONS,
-			minStartDate: getOneYearAgo(),
+			minStartDate: '2025-12-01', // 定投开始日期最小值
 			today: getToday()
 		}
 	},
@@ -754,6 +756,13 @@ export default {
 				font-size: 20rpx;
 				color: #999;
 			}
+		}
+
+		.date-hint {
+			display: block;
+			margin-top: 8rpx;
+			font-size: 22rpx;
+			color: #999;
 		}
 
 		.invest-stats {
