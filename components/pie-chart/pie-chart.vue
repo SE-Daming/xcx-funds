@@ -8,16 +8,21 @@
 			@touchend="onTouchEnd"
 			@touchcancel="onTouchEnd"
 		></canvas>
-		<!-- 图例 - 可滚动 -->
-		<scroll-view class="legend-list" scroll-y>
-			<view class="legend-item" v-for="(item, index) in chartData" :key="index" @click="onLegendClick(item)">
+		<!-- 图例 - 可展开/收起，按占比排序 -->
+		<view class="legend-list">
+			<view class="legend-item" v-for="(item, index) in displayChartData" :key="index" @click="onLegendClick(item)">
 				<view class="legend-color" :style="{ backgroundColor: item.color }"></view>
 				<view class="legend-info">
 					<text class="legend-name">{{ item.name }}</text>
 					<text class="legend-value">¥{{ item.amount.toFixed(2) }} ({{ item.percent }}%)</text>
 				</view>
 			</view>
-		</scroll-view>
+		</view>
+		<!-- 展开/收起按钮 -->
+		<view class="expand-btn" v-if="showExpandBtn" @click="toggleExpand">
+			<text>{{ expanded ? '收起' : '展开查看全部' }}</text>
+			<text class="expand-icon">{{ expanded ? '▲' : '▼' }}</text>
+		</view>
 		<!-- 触摸提示 - 固定在饼图中间 -->
 		<cover-view class="touch-tip" v-if="showTip">
 			<cover-view class="tip-content">
@@ -44,18 +49,34 @@ export default {
 			width: 200,
 			height: 200,
 			chartData: [],
+			sortedChartData: [], // 按占比排序后的数据
 			slices: [], // 存储扇形区域信息用于触摸检测
 			// 触摸提示
 			showTip: false,
 			tipName: '',
 			tipAmount: '',
 			tipPercent: '',
+			// 展开状态
+			expanded: false,
 			// 颜色列表
 			colors: [
 				'#2979ff', '#19be6b', '#ff9900', '#ed4014', '#9c27b0',
 				'#00bcd4', '#ff5722', '#795548', '#607d8b', '#e91e63',
 				'#3f51b5', '#009688', '#ffc107', '#03a9f4', '#8bc34a'
 			]
+		}
+	},
+	computed: {
+		// 显示的图例数据（根据展开状态和排序）
+		displayChartData() {
+			if (this.expanded) {
+				return this.sortedChartData;
+			}
+			return this.sortedChartData.slice(0, 5);
+		},
+		// 是否显示展开按钮
+		showExpandBtn() {
+			return this.sortedChartData.length > 5;
 		}
 	},
 	watch: {
@@ -88,6 +109,7 @@ export default {
 			const total = this.data.reduce((sum, item) => sum + (item.amount || 0), 0);
 			if (total === 0) {
 				this.chartData = [];
+				this.sortedChartData = [];
 				return;
 			}
 
@@ -97,6 +119,11 @@ export default {
 				percent: ((item.amount / total) * 100).toFixed(1),
 				color: this.colors[index % this.colors.length]
 			}));
+
+			// 按占比倒序排序（用于图例显示）
+			this.sortedChartData = [...this.chartData].sort((a, b) => {
+				return parseFloat(b.percent) - parseFloat(a.percent);
+			});
 		},
 		drawChart() {
 			if (!this.ctx || this.chartData.length === 0) return;
@@ -212,6 +239,9 @@ export default {
 			if (item.code) {
 				this.$emit('click', item);
 			}
+		},
+		toggleExpand() {
+			this.expanded = !this.expanded;
 		}
 	}
 }
@@ -234,7 +264,6 @@ export default {
 .legend-list {
 	margin-top: 20rpx;
 	padding: 0 20rpx;
-	max-height: 400rpx;
 }
 
 .legend-item {
@@ -279,6 +308,23 @@ export default {
 .legend-value {
 	font-size: 24rpx;
 	color: #666;
+}
+
+/* 展开按钮 */
+.expand-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20rpx 0;
+	margin-top: 8rpx;
+	border-top: 1rpx solid #f0f0f0;
+	font-size: 26rpx;
+	color: #2979ff;
+
+	.expand-icon {
+		margin-left: 8rpx;
+		font-size: 20rpx;
+	}
 }
 
 .touch-tip {
