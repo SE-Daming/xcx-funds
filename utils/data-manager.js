@@ -511,57 +511,6 @@ export class DataManager {
   }
 
   /**
-   * 清空定投记录（同时扣除份额）
-   * @param {string} fundCode - 基金代码
-   * @returns {Object|null} 返回扣除的份额和金额，失败返回 null
-   */
-  static clearInvestRecords(fundCode) {
-    try {
-      const fundList = this.getFundList();
-      const fundIndex = fundList.findIndex(item => item.code === fundCode);
-
-      if (fundIndex === -1) {
-        return null;
-      }
-
-      const fund = fundList[fundIndex];
-      const records = fund.investRecords || [];
-
-      if (records.length === 0) {
-        return { deductedShares: 0, deductedAmount: 0 };
-      }
-
-      // 计算要扣除的份额和金额
-      const deductedShares = records.reduce((sum, r) => sum + r.shares, 0);
-      const deductedAmount = records.reduce((sum, r) => sum + r.amount, 0);
-
-      // 计算新的持仓
-      const oldNum = parseFloat(fund.num) || 0;
-      const oldCost = parseFloat(fund.cost) || 0;
-      const oldAmount = oldNum * oldCost;
-
-      const newNum = Math.max(0, oldNum - deductedShares);
-      const newAmount = oldAmount - deductedAmount;
-      const newCost = newNum > 0 ? newAmount / newNum : 0;
-
-      // 更新数据
-      fundList[fundIndex].investRecords = [];
-      fundList[fundIndex].num = parseFloat(newNum.toFixed(2));
-      fundList[fundIndex].cost = parseFloat(newCost.toFixed(4));
-
-      uni.setStorageSync('fundList', fundList);
-
-      return {
-        deductedShares: parseFloat(deductedShares.toFixed(2)),
-        deductedAmount: parseFloat(deductedAmount.toFixed(2))
-      };
-    } catch (e) {
-      console.error('清空定投记录失败:', e);
-      return null;
-    }
-  }
-
-  /**
    * 删除定投计划（重置为未开启状态，保留份额）
    * @param {string} fundCode - 基金代码
    * @returns {Boolean} 删除是否成功
