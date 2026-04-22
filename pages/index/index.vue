@@ -432,10 +432,9 @@ export default {
 		},
 		getInvestTag(fund) {
 			if (!fund || !fund.investPlan) return '';
-			const plan = fund.investPlan;
-			if (plan.status === 'terminated') return '';
-			if (plan.status === 'active' && plan.enabled) return '📅 定投';
-			if (plan.status === 'paused' || !plan.enabled) return '⏸️ 暂停';
+			if (fund.investPlan.enabled) return '📅 定投';
+			// 有定投记录但已关闭
+			if (fund.investRecords && fund.investRecords.length > 0) return '⏸️ 暂停';
 			return '';
 		},
 		goToGroupManage() {
