@@ -6,7 +6,7 @@
 				<text class="fund-name">{{ fundDetail.name }}</text>
 				<text class="fund-code">{{ fundDetail.code }}</text>
 			</view>
-			
+
 			<view class="main-metrics">
 				<view class="metric-main">
 					<text class="value" :class="{'red': fundDetail.gszzl > 0, 'green': fundDetail.gszzl < 0}">
@@ -24,7 +24,7 @@
 				</view>
 			</view>
 		</view>
-		
+
 		<!-- 详细数据卡片 -->
 		<view class="detail-card">
 			<view class="card-title">基本信息</view>
@@ -46,7 +46,7 @@
 					<text class="value">{{ fundDetail.cost || 0 }}</text>
 				</view>
 			</view>
-			
+
 			<!-- 持仓收益计算 -->
 			<view class="holding-profit" v-if="fundDetail.num > 0">
 				<view class="divider"></view>
@@ -82,6 +82,124 @@
 			</view>
 		</view>
 
+		<!-- 定投统计卡片 -->
+		<view class="detail-card invest-card">
+			<view class="card-title-row">
+				<view class="card-title">定投统计</view>
+				<view class="invest-status" :class="investStatusClass">{{ investStatusLabel }}</view>
+			</view>
+
+			<!-- 定投汇总数据 -->
+			<view class="invest-summary">
+				<view class="summary-grid">
+					<view class="summary-item">
+						<text class="summary-value">{{ displayInvestSummary.totalAmount }}</text>
+						<text class="summary-label">累计投入(元)</text>
+					</view>
+					<view class="summary-item">
+						<text class="summary-value">{{ displayInvestSummary.totalShares }}</text>
+						<text class="summary-label">累计份额</text>
+					</view>
+					<view class="summary-item">
+						<text class="summary-value">{{ displayInvestSummary.currentValue }}</text>
+						<text class="summary-label">当前市值(元)</text>
+					</view>
+					<view class="summary-item">
+						<text class="summary-value" :class="{'red': displayInvestSummary.profit >= 0, 'green': displayInvestSummary.profit < 0}">
+							{{ displayInvestSummary.profit >= 0 ? '+' : '' }}{{ displayInvestSummary.profit }}
+						</text>
+						<text class="summary-label">收益(元)</text>
+					</view>
+				</view>
+				<view class="summary-footer">
+					<view class="footer-item">
+						<text class="footer-label">定投均价</text>
+						<text class="footer-value">{{ displayInvestSummary.avgCost }}元</text>
+					</view>
+					<view class="footer-item">
+						<text class="footer-label">已执行</text>
+						<text class="footer-value">{{ displayInvestSummary.investCount }}期</text>
+					</view>
+					<view class="footer-item">
+						<text class="footer-label">收益率</text>
+						<text class="footer-value" :class="{'red': displayInvestSummary.profitRate >= 0, 'green': displayInvestSummary.profitRate < 0}">
+							{{ displayInvestSummary.profitRate >= 0 ? '+' : '' }}{{ displayInvestSummary.profitRate }}%
+						</text>
+					</view>
+				</view>
+			</view>
+
+			<!-- 同步定投按钮 -->
+			<view class="sync-btn-wrapper" v-if="investPlan && investPlan.enabled">
+				<view class="sync-hint" v-if="syncHint">
+					<text>{{ syncHint }}</text>
+					<text class="pending-badge" v-if="pendingSyncCount > 0">待同步 {{ pendingSyncCount }} 期</text>
+				</view>
+				<view class="sync-btn" :class="{ 'loading': syncLoading }" @click="onSyncBtnClick">
+					<text v-if="!syncLoading">同步定投</text>
+					<text v-else>同步中...</text>
+				</view>
+			</view>
+
+			<!-- 调试面板 -->
+			<view class="debug-panel" v-if="showDebugPanel">
+				<view class="debug-header">
+					<text class="debug-title">🔧 调试模式</text>
+					<text class="debug-close" @click="showDebugPanel = false">✕</text>
+				</view>
+				<view class="debug-content">
+					<view class="debug-item">
+						<text class="debug-label">模拟截止日期</text>
+						<picker mode="date" :value="debugEndDate" @change="onDebugEndDateChange">
+							<view class="debug-picker">{{ debugEndDate }} ▼</view>
+						</picker>
+					</view>
+					<view class="debug-item">
+						<text class="debug-label">开始日期</text>
+						<picker mode="date" :end="today" :value="debugStartDate" @change="onDebugStartDateChange">
+							<view class="debug-picker">{{ debugStartDate }} ▼</view>
+						</picker>
+					</view>
+					<view class="debug-item">
+						<text class="debug-label">上次执行</text>
+						<text class="debug-value">{{ investPlan?.lastInvestDate || '无' }}</text>
+					</view>
+					<view class="debug-actions">
+						<view class="debug-btn" @click="runDebugSync">模拟同步</view>
+						<view class="debug-btn warning" @click="resetInvestPlan">重置计划</view>
+					</view>
+					<view class="debug-result" v-if="debugResult">
+						<text class="debug-result-title">模拟结果：</text>
+						<text class="debug-result-text">{{ debugResult }}</text>
+					</view>
+				</view>
+			</view>
+
+			<!-- 定投记录列表 -->
+			<view class="invest-records" v-if="investRecords.length > 0">
+				<view class="records-header" @click="toggleRecordsExpanded">
+					<text class="records-title">定投记录</text>
+					<view class="records-toggle">
+						<text>{{ investRecords.length }}条</text>
+						<text class="toggle-arrow" :class="{ 'expanded': recordsExpanded }">▼</text>
+					</view>
+				</view>
+				<view class="records-list" v-if="recordsExpanded">
+					<view class="record-item" v-for="(record, index) in displayRecords" :key="index">
+						<view class="record-date">{{ record.date }}</view>
+						<view class="record-info">
+							<text class="record-amount">投入{{ record.amount }}元</text>
+							<text class="record-shares">买入{{ record.shares.toFixed(2) }}份</text>
+						</view>
+						<view class="record-nav">净值 {{ record.nav }}</view>
+					</view>
+					<view class="load-more" v-if="hasMoreRecords" @click="loadMoreRecords">
+						<text>加载更多</text>
+					</view>
+				</view>
+			</view>
+		</view>
+
 		<!-- 图表区域 -->
 		<view class="chart-card">
 			<view class="chart-header">
@@ -109,7 +227,7 @@
 				></fund-chart>
 			</view>
 		</view>
-		
+
 		<!-- 底部操作栏 -->
 		<cover-view class="bottom-actions">
 			<cover-view class="action-btn edit" @click="editFund">编辑藏品</cover-view>
@@ -119,8 +237,9 @@
 </template>
 
 <script>
-import { getFundData, getFundIntradayValuation, getFundHistoryNav } from '@/utils/fund-api.js';
+import { getFundData, getFundHistoryNav } from '@/utils/fund-api.js';
 import { DataManager } from '@/utils/data-manager.js';
+import { executeInvestment, calculateSummary, mergeToHolding, generateInvestDates } from '@/utils/invest-plan.js';
 import FundChart from '@/components/fund-chart/fund-chart.vue';
 
 export default {
@@ -146,29 +265,112 @@ export default {
 			deviceId: '',
 			chartData: [],
 			chartLabels: [],
-			// 图表周期
-			chartPeriod: 'y', // y=月, 3y=季, n=年
+			chartPeriod: 'y',
 			chartPeriods: [
 				{ key: 'y', label: '近1月' },
 				{ key: '3y', label: '近3月' },
 				{ key: 'n', label: '近1年' }
 			],
-			chartLoading: false
+			chartLoading: false,
+			// 定投相关
+			investPlan: null,
+			investRecords: [],
+			investSummary: null,
+			syncLoading: false,
+			recordsExpanded: false,
+			recordsPageSize: 20,
+			recordsCurrentPage: 1,
+			// 调试相关
+			showDebugPanel: false,
+			debugStartDate: '',
+			debugEndDate: '',
+			debugResult: '',
+			syncClickCount: 0,
+			syncClickTimer: null,
+			today: '',
+			// 交易日列表，用于精确计算待同步期数
+			tradingDays: []
 		}
 	},
 	computed: {
 		chartColor() {
 			if (this.chartData.length > 0) {
-				// 如果有数据，根据最后一个点与第一个点的比较决定颜色
 				const first = this.chartData[0];
 				const last = this.chartData[this.chartData.length - 1];
 				return last >= first ? '#f5222d' : '#52c41a';
 			}
 			return '#2979ff';
+		},
+		hasInvestPlan() {
+			return this.investPlan && this.investPlan.enabled;
+		},
+		investStatusLabel() {
+			if (!this.investPlan) return '';
+			return this.investPlan.enabled ? '进行中' : '未开启';
+		},
+		investStatusClass() {
+			if (!this.investPlan) return '';
+			return this.investPlan.enabled ? 'status-active' : 'status-paused';
+		},
+		// 定投汇总数据（带默认值）
+		displayInvestSummary() {
+			const empty = {
+				totalAmount: 0,
+				totalShares: 0,
+				currentValue: 0,
+				profit: 0,
+				avgCost: 0,
+				investCount: 0,
+				profitRate: 0
+			};
+			return this.investSummary || empty;
+		},
+		displayRecords() {
+			return this.investRecords.slice(0, this.recordsPageSize * this.recordsCurrentPage);
+		},
+		hasMoreRecords() {
+			return this.investRecords.length > this.recordsPageSize * this.recordsCurrentPage;
+		},
+		// 同步提示信息
+		syncHint() {
+			if (!this.investPlan || !this.investPlan.enabled) return '';
+
+			const lastDate = this.investPlan.lastInvestDate;
+			if (!lastDate) {
+				return '从未同步';
+			}
+
+			// 计算距离上次同步的天数
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			const last = new Date(lastDate);
+			last.setHours(0, 0, 0, 0);
+			const daysDiff = Math.floor((today - last) / (1000 * 60 * 60 * 24));
+
+			if (daysDiff === 0) {
+				return '今天已同步';
+			} else if (daysDiff === 1) {
+				return '上次同步：昨天';
+			} else if (daysDiff <= 7) {
+				return `上次同步：${daysDiff}天前`;
+			} else {
+				return `上次同步：${lastDate}`;
+			}
+		},
+		// 待同步期数（使用实际交易日和定投周期精确计算）
+		pendingSyncCount() {
+			if (!this.investPlan || !this.investPlan.enabled) return 0;
+			if (!this.tradingDays || this.tradingDays.length === 0) return 0;
+
+			const lastTradingDay = this.tradingDays[this.tradingDays.length - 1];
+
+			// 使用 generateInvestDates 根据定投周期生成正确的定投日期
+			const investDates = generateInvestDates(this.investPlan, lastTradingDay, this.tradingDays);
+
+			return investDates.length;
 		}
 	},
 	onLoad(options) {
-		// 获取传递的基金代码参数
 		this.fundCode = options.code;
 		this.loadDeviceId();
 	},
@@ -180,7 +382,6 @@ export default {
 	},
 	methods: {
 		loadDeviceId() {
-			// 获取或生成设备ID
 			let deviceId = uni.getStorageSync('deviceId');
 			if (!deviceId) {
 				deviceId = this.generateUUID();
@@ -189,7 +390,6 @@ export default {
 			this.deviceId = deviceId;
 		},
 		generateUUID() {
-			// 生成UUID
 			return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
 				var r = Math.random() * 16 | 0;
 				var v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -212,62 +412,73 @@ export default {
 		},
 		calculateProfit() {
 			if (!this.fundDetail.num || !this.fundDetail.cost) return 0;
-			
+
 			const todayStr = new Date().toISOString().slice(0, 10);
 			const isUpdated = this.fundDetail.jzrq === todayStr;
 			const day = new Date().getDay();
 			const isWeekend = day === 0 || day === 6;
 			const useUpdatedMode = isUpdated || isWeekend;
-			
+
 			let currentPrice = 0;
 			if (useUpdatedMode) {
 				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
 			} else {
 				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
 			}
-			
+
 			if (currentPrice === 0) return 0;
-			
+
 			return (currentPrice - parseFloat(this.fundDetail.cost)) * parseFloat(this.fundDetail.num);
 		},
 		calculateProfitRate() {
 			if (!this.fundDetail.num || !this.fundDetail.cost) return '0.00';
-			
+
 			const todayStr = new Date().toISOString().slice(0, 10);
 			const isUpdated = this.fundDetail.jzrq === todayStr;
 			const day = new Date().getDay();
 			const isWeekend = day === 0 || day === 6;
 			const useUpdatedMode = isUpdated || isWeekend;
-			
+
 			let currentPrice = 0;
 			if (useUpdatedMode) {
 				currentPrice = parseFloat(this.fundDetail.dwjz) || 0;
 			} else {
 				currentPrice = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
 			}
-			
+
 			const cost = parseFloat(this.fundDetail.cost);
 			if (currentPrice === 0 || cost === 0) return '0.00';
-			
+
 			const rate = (currentPrice - cost) / cost * 100;
 			return (rate > 0 ? '+' : '') + rate.toFixed(2);
 		},
 		async loadFundDetail(code) {
-			// uni.showLoading({ title: '加载中...' });
-			
 			try {
-				// 从本地存储获取基金的持仓信息
 				const fundList = DataManager.getFundList();
 				this.localFundInfo = fundList.find(item => item.code === code) || null;
-				
-				// 从API获取基金实时数据
+
+				// 加载定投计划
+				if (this.localFundInfo) {
+					this.investPlan = this.localFundInfo.investPlan || null;
+					this.investRecords = this.localFundInfo.investRecords || [];
+
+					// 计算定投汇总
+					if (this.investRecords.length > 0) {
+						this.updateInvestSummary();
+					}
+
+					// 如果有开启的定投计划，预先加载交易日列表
+					if (this.investPlan && this.investPlan.enabled) {
+						this.loadTradingDays(code);
+					}
+				}
+
 				const result = await getFundData([code], this.deviceId);
 				const apiData = result.Datas || [];
-				
+
 				if (apiData.length > 0) {
 					const apiFund = apiData[0];
-					
-					// 合并API数据和本地数据
+
 					this.fundDetail = {
 						code: apiFund.fundcode,
 						name: apiFund.name,
@@ -280,8 +491,12 @@ export default {
 						cost: this.localFundInfo ? this.localFundInfo.cost : 0,
 						remark: this.localFundInfo ? (this.localFundInfo.remark || '') : ''
 					};
+
+					// 更新定投汇总（使用最新净值）
+					if (this.investRecords.length > 0) {
+						this.updateInvestSummary();
+					}
 				} else if (this.localFundInfo) {
-					// 如果API失败，至少显示本地信息
 					this.fundDetail = {
 						...this.localFundInfo,
 						gsz: '',
@@ -293,8 +508,25 @@ export default {
 				}
 			} catch (error) {
 				console.error('加载基金详情失败:', error);
-			} finally {
-				// uni.hideLoading();
+			}
+		},
+		updateInvestSummary() {
+			if (this.investRecords.length > 0) {
+				const currentNav = parseFloat(this.fundDetail.gsz) || parseFloat(this.fundDetail.dwjz) || 0;
+				this.investSummary = calculateSummary(this.investRecords, currentNav);
+			} else {
+				this.investSummary = null;
+			}
+		},
+		// 加载交易日列表（用于精确计算待同步期数）
+		async loadTradingDays(code) {
+			try {
+				const navHistory = await getFundHistoryNav(code, 'n');
+				if (navHistory && navHistory.length > 0) {
+					this.tradingDays = navHistory.map(item => item.date);
+				}
+			} catch (e) {
+				console.error('加载交易日列表失败:', e);
 			}
 		},
 		async loadChartData(code) {
@@ -303,16 +535,13 @@ export default {
 			this.chartLabels = [];
 
 			try {
-				// 使用净值走势接口
 				const data = await getFundHistoryNav(code, this.chartPeriod);
-				console.log('图表数据:', data[0]?.date, '->', data[data.length-1]?.date);
 				if (data && data.length > 0) {
 					this.chartData = data.map(item => item.nav);
-					// 均匀显示日期标签
 					const step = Math.max(1, Math.floor(data.length / 4));
 					this.chartLabels = data.map((item, index) => {
 						if (index === 0 || index === data.length - 1 || index % step === 0) {
-							return item.date.substring(5); // MM-DD
+							return item.date.substring(5);
 						}
 						return '';
 					});
@@ -328,7 +557,209 @@ export default {
 			this.chartPeriod = period;
 			this.loadChartData(this.fundCode);
 		},
-		editFund() {
+		// 定投相关方法
+		onSyncBtnClick() {
+			// 连击检测，5次开启调试模式
+			this.syncClickCount++;
+			if (this.syncClickTimer) {
+				clearTimeout(this.syncClickTimer);
+			}
+			this.syncClickTimer = setTimeout(() => {
+				if (this.syncClickCount >= 5) {
+					this.showDebugPanel = true;
+					this.debugStartDate = this.investPlan.startDate;
+					this.debugEndDate = this.investPlan.lastInvestDate || this.investPlan.startDate;
+					this.today = new Date().toISOString().slice(0, 10);
+					uni.showToast({ title: '调试模式已开启', icon: 'none' });
+				} else {
+					this.syncInvestment();
+				}
+				this.syncClickCount = 0;
+			}, 500);
+		},
+		onDebugEndDateChange(e) {
+			this.debugEndDate = e.detail.value;
+		},
+		onDebugStartDateChange(e) {
+			this.debugStartDate = e.detail.value;
+		},
+		async runDebugSync() {
+			if (!this.investPlan) {
+				uni.showToast({ title: '无定投计划', icon: 'none' });
+				return;
+			}
+
+			this.debugResult = '模拟中...';
+
+			try {
+				const navHistory = await getFundHistoryNav(this.fundCode, 'n');
+				if (!navHistory || navHistory.length === 0) {
+					this.debugResult = '无法获取历史净值';
+					return;
+				}
+
+				// 使用已导入的函数计算日期
+				const tradingDays = navHistory.map(item => item.date);
+				const navMap = new Map(navHistory.map(item => [item.date, item.nav]));
+
+				// 创建模拟计划（临时修改开始日期）
+				const debugPlan = { ...this.investPlan, startDate: this.debugStartDate };
+
+				// 生成到指定日期的定投日期
+				// 检查截止日期是否在净值数据范围内
+				const lastNavDate = tradingDays[tradingDays.length - 1];
+				const effectiveEndDate = this.debugEndDate > lastNavDate ? lastNavDate : this.debugEndDate;
+
+				// 生成到指定日期的定投日期
+				const investDates = generateInvestDates(debugPlan, effectiveEndDate, tradingDays);
+
+				// 计算每期份额
+				const investAmount = parseFloat(debugPlan.amount) || 0;
+				const newRecords = [];
+				for (const date of investDates) {
+					const nav = navMap.get(date);
+					if (!nav || nav <= 0) continue;
+					const shares = parseFloat((investAmount / nav).toFixed(4));
+					newRecords.push({ date, amount: investAmount, nav, shares });
+				}
+
+				// 计算汇总
+				const currentNav = navMap.get(tradingDays[tradingDays - 1]) || 0;
+				const summary = calculateSummary(newRecords, currentNav);
+
+
+				// 控制台输出详细记录
+				console.log('===== 定投模拟详细记录 =====');
+				console.log('日期\t\t净值\t\t投入\t份额');
+				newRecords.forEach(r => {
+					console.log(`${r.date}\t${r.nav.toFixed(4)}\t${r.amount}元\t${r.shares.toFixed(4)}份`);
+				});
+				console.log('=============================');
+
+				// 显示结果（显示前10条和后5条）
+				const detailLines = [];
+				const showFirst = 10;
+				const showLast = 5;
+
+				for (let i = 0; i < Math.min(showFirst, newRecords.length); i++) {
+					const r = newRecords[i];
+					detailLines.push(`${r.date} | 净值${r.nav.toFixed(4)} | 投入${r.amount}元 | 买入${r.shares.toFixed(2)}份`);
+				}
+				if (newRecords.length > showFirst + showLast) {
+					detailLines.push(`... 省略 ${newRecords.length - showFirst - showLast} 条 ...`);
+				}
+				if (newRecords.length > showFirst) {
+					for (let i = Math.max(showFirst, newRecords.length - showLast); i < newRecords.length; i++) {
+						const r = newRecords[i];
+						detailLines.push(`${r.date} | 净值${r.nav.toFixed(4)} | 投入${r.amount}元 | 买入${r.shares.toFixed(2)}份`);
+					}
+				}
+
+				const resultLines = [
+					`生成 ${investDates.length} 个定投日期`,
+					`有效记录 ${newRecords.length} 条`,
+					`累计投入 ${summary ? summary.totalAmount : 0} 元`,
+					`累计份额 ${summary ? summary.totalShares.toFixed(2) : 0} 份`,
+					`定投均价 ${summary ? summary.avgCost.toFixed(4) : 0} 元`,
+					``,
+					`【详细记录】`,
+					...detailLines
+				];
+				this.debugResult = resultLines.join('\n');
+
+			} catch (e) {
+				console.error('调试同步失败:', e);
+				this.debugResult = '模拟失败: ' + e.message;
+			}
+		},
+		resetInvestPlan() {
+			uni.showModal({
+				title: '重置定投计划',
+				content: '确定要重置吗？将清空 lastInvestDate 和所有记录。',
+				confirmColor: '#ff4d4f',
+				success: (res) => {
+					if (res.confirm) {
+						this.investPlan.lastInvestDate = null;
+						this.investRecords = [];
+						this.investSummary = null;
+						DataManager.updateInvestPlan(this.fundCode, this.investPlan);
+						DataManager.updateInvestRecords(this.fundCode, []);
+						uni.showToast({ title: '已重置', icon: 'success' });
+						this.debugResult = '计划已重置，lastInvestDate 已清空';
+					}
+				}
+			});
+		},
+		async syncInvestment() {
+			if (this.syncLoading) return;
+
+			if (!this.investPlan || !this.investPlan.enabled) {
+				uni.showToast({ title: '定投计划未启用', icon: 'none' });
+				return;
+			}
+
+			this.syncLoading = true;
+
+			try {
+				// 获取一年内历史净值数据
+				const navHistory = await getFundHistoryNav(this.fundCode, 'n');
+
+				if (!navHistory || navHistory.length === 0) {
+					uni.showToast({ title: '无法获取历史净值', icon: 'none' });
+					return;
+				}
+
+				// 执行定投计算
+				const result = executeInvestment(this.investPlan, navHistory, this.investRecords);
+
+				if (result.error) {
+					uni.showToast({ title: result.error, icon: 'none' });
+					return;
+				}
+
+				if (result.newRecords.length === 0) {
+					uni.showToast({ title: '没有新的定投记录', icon: 'none' });
+					return;
+				}
+
+				// 计算新增份额和金额
+				const newShares = result.newRecords.reduce((sum, r) => sum + r.shares, 0);
+				const newAmount = result.newRecords.reduce((sum, r) => sum + r.amount, 0);
+
+				// 合并到持仓
+				const holdingUpdate = mergeToHolding(this.fundDetail, newShares, newAmount);
+
+				// 更新数据
+				this.investRecords = result.allRecords;
+				this.investPlan.lastInvestDate = result.lastInvestDate;
+				this.investSummary = result.summary;
+
+				// 保存到本地
+				DataManager.updateInvestRecords(this.fundCode, this.investRecords, holdingUpdate);
+				DataManager.updateInvestPlan(this.fundCode, this.investPlan);
+
+				// 更新界面显示
+				this.fundDetail.num = holdingUpdate.num;
+				this.fundDetail.cost = holdingUpdate.cost;
+
+				uni.showToast({
+					title: `新增${result.newRecords.length}条记录`,
+					icon: 'success'
+				});
+			} catch (e) {
+				console.error('同步定投失败:', e);
+				uni.showToast({ title: '同步失败', icon: 'none' });
+			} finally {
+				this.syncLoading = false;
+			}
+		},
+		toggleRecordsExpanded() {
+			this.recordsExpanded = !this.recordsExpanded;
+		},
+		loadMoreRecords() {
+			this.recordsCurrentPage++;
+		},
+			editFund() {
 			uni.navigateTo({
 				url: `/pages/fund/edit?code=${this.fundCode}`
 			});
@@ -339,18 +770,15 @@ export default {
 				content: `确定要删除 ${this.fundDetail.name} 吗？`,
 				success: (res) => {
 					if (res.confirm) {
-						// 从本地基金列表中删除
 						DataManager.removeFund(this.fundCode);
-						
+
 						uni.showToast({
 							title: '删除成功',
 							icon: 'success'
 						});
-						
-						// 触发全局事件，通知主页面刷新数据
+
 						uni.$emit('fundDeleted', { fundCode: this.fundCode });
-						
-						// 延迟返回上一页
+
 						setTimeout(() => {
 							uni.navigateBack();
 						}, 1500);
@@ -371,7 +799,7 @@ export default {
 <style lang="scss">
 .fund-detail-container {
 	padding: 20rpx;
-	padding-bottom: 120rpx; // 为底部按钮留出空间
+	padding-bottom: 120rpx;
 	background-color: $page-bg;
 	min-height: 100vh;
 }
@@ -384,10 +812,10 @@ export default {
 	margin-bottom: 20rpx;
 	box-shadow: $card-shadow;
 	border: 1rpx solid #eef0f5;
-	
+
 	.fund-title-row {
 		margin-bottom: 30rpx;
-		
+
 		.fund-name {
 			font-size: 34rpx;
 			font-weight: bold;
@@ -395,7 +823,7 @@ export default {
 			display: block;
 			margin-bottom: 6rpx;
 		}
-		
+
 		.fund-code {
 			font-size: 26rpx;
 			color: $uni-text-color-grey;
@@ -404,36 +832,36 @@ export default {
 			border-radius: 6rpx;
 		}
 	}
-	
+
 	.main-metrics {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-end;
-		
+
 		.metric-main {
 			display: flex;
 			flex-direction: column;
-			
+
 			.value {
 				font-size: 60rpx;
 				font-weight: bold;
 				line-height: 1.1;
 				font-family: 'DIN Alternate', 'Roboto', sans-serif;
 			}
-			
+
 			.label {
 				font-size: 24rpx;
 				color: $uni-text-color-grey;
 				margin-top: 6rpx;
 			}
 		}
-		
+
 		.metric-sub {
 			display: flex;
 			flex-direction: column;
 			align-items: flex-end;
 			min-width: 180rpx;
-			
+
 			.value {
 				font-size: 32rpx;
 				font-weight: 500;
@@ -442,7 +870,7 @@ export default {
 				font-family: 'DIN Alternate', 'Roboto', sans-serif;
 				text-align: right;
 			}
-			
+
 			.label {
 				font-size: 22rpx;
 				color: $uni-text-color-grey;
@@ -458,7 +886,7 @@ export default {
 	padding: 30rpx;
 	margin-bottom: 20rpx;
 	box-shadow: $card-shadow;
-	
+
 	.card-title {
 		font-size: 30rpx;
 		font-weight: bold;
@@ -468,25 +896,36 @@ export default {
 		border-left: 6rpx solid $uni-color-primary;
 		line-height: 1;
 	}
+
+	.card-title-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 24rpx;
+
+		.card-title {
+			margin-bottom: 0;
+		}
+	}
 }
 
 /* Detail Grid */
 .data-grid {
 	display: flex;
 	flex-wrap: wrap;
-	
+
 	.data-item {
 		width: 50%;
 		display: flex;
 		flex-direction: column;
 		margin-bottom: 24rpx;
-		
+
 		.label {
 			font-size: 24rpx;
 			color: $uni-text-color-grey;
 			margin-bottom: 8rpx;
 		}
-		
+
 		.value {
 			font-size: 28rpx;
 			color: $uni-text-color;
@@ -497,47 +936,47 @@ export default {
 
 .holding-profit {
 	margin-top: 10rpx;
-	
+
 	.divider {
 		height: 1rpx;
 		background-color: #eee;
 		margin-bottom: 24rpx;
 	}
-	
+
 	.profit-row {
 		display: flex;
 		justify-content: space-between;
 		background-color: #f9faff;
 		padding: 20rpx;
 		border-radius: 8rpx;
-		
+
 		.profit-item {
 			display: flex;
 			flex-direction: column;
-			
+
 			&:last-child {
 				align-items: flex-end;
 			}
-			
+
 			.label {
 				font-size: 22rpx;
 				color: $uni-text-color-grey;
 				margin-bottom: 6rpx;
 			}
-			
+
 			.value {
 				font-size: 30rpx;
 				font-weight: bold;
 			}
-			
+
 			.profit-values {
 				display: flex;
 				align-items: baseline;
-				
+
 				.value {
 					margin-right: 10rpx;
 				}
-				
+
 				.rate {
 					font-size: 24rpx;
 					font-weight: 500;
@@ -607,7 +1046,7 @@ export default {
 	}
 }
 
-/* Bottom Actions - 使用 cover-view 覆盖 canvas */
+/* Bottom Actions */
 .bottom-actions {
 	position: fixed;
 	bottom: 0;
@@ -619,7 +1058,7 @@ export default {
 	display: flex;
 	flex-direction: row;
 	justify-content: space-between;
-	
+
 	.action-btn {
 		flex: 1;
 		margin: 0 15rpx;
@@ -628,12 +1067,12 @@ export default {
 		height: 80rpx;
 		line-height: 80rpx;
 		text-align: center;
-		
+
 		&.edit {
 			background-color: #2979ff;
 			color: #fff;
 		}
-		
+
 		&.delete {
 			background-color: #fff;
 			color: #ff4d4f;
@@ -687,6 +1126,325 @@ export default {
 		.empty-text {
 			font-size: 28rpx;
 			color: #999;
+		}
+	}
+}
+
+/* Invest Card */
+.invest-card {
+	.invest-status {
+		font-size: 22rpx;
+		padding: 4rpx 16rpx;
+		border-radius: 12rpx;
+
+		&.status-active {
+			background-color: #e6f7ff;
+			color: #1890ff;
+		}
+
+		&.status-paused {
+			background-color: #fff7e6;
+			color: #fa8c16;
+		}
+	}
+
+	.invest-summary {
+		.summary-grid {
+			display: flex;
+			justify-content: space-between;
+			margin-bottom: 20rpx;
+
+			.summary-item {
+				flex: 1;
+				text-align: center;
+
+				.summary-value {
+					display: block;
+					font-size: 32rpx;
+					font-weight: bold;
+					color: #333;
+					margin-bottom: 8rpx;
+
+					&.red {
+						color: #f5222d;
+					}
+
+					&.green {
+						color: #52c41a;
+					}
+				}
+
+				.summary-label {
+					display: block;
+					font-size: 22rpx;
+					color: #999;
+				}
+			}
+		}
+
+		.summary-footer {
+			display: flex;
+			justify-content: space-around;
+			padding: 16rpx;
+			background-color: #f9faff;
+			border-radius: 8rpx;
+
+			.footer-item {
+				text-align: center;
+
+				.footer-label {
+					display: block;
+					font-size: 22rpx;
+					color: #999;
+					margin-bottom: 4rpx;
+				}
+
+				.footer-value {
+					display: block;
+					font-size: 26rpx;
+					color: #333;
+
+					&.red {
+						color: #f5222d;
+					}
+
+					&.green {
+						color: #52c41a;
+					}
+				}
+			}
+		}
+	}
+
+	.sync-btn-wrapper {
+		margin-top: 20rpx;
+
+		.sync-hint {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 12rpx;
+			font-size: 24rpx;
+			color: #666;
+
+			.pending-badge {
+				padding: 4rpx 12rpx;
+				background-color: #fff3cd;
+				color: #856404;
+				border-radius: 12rpx;
+				font-size: 22rpx;
+			}
+		}
+
+		.sync-btn {
+			padding: 20rpx;
+			text-align: center;
+			background-color: #3498db;
+			color: #fff;
+			border-radius: 8rpx;
+			font-size: 28rpx;
+
+			&.loading {
+				background-color: #a0cfff;
+			}
+		}
+	}
+
+	.invest-records {
+		margin-top: 20rpx;
+		border-top: 1rpx solid #eee;
+		padding-top: 20rpx;
+
+		.records-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding-bottom: 16rpx;
+
+			.records-title {
+				font-size: 28rpx;
+				font-weight: bold;
+				color: #333;
+			}
+
+			.records-toggle {
+				display: flex;
+				align-items: center;
+				gap: 8rpx;
+				font-size: 24rpx;
+				color: #666;
+
+				.toggle-arrow {
+					font-size: 20rpx;
+					transition: transform 0.2s;
+
+					&.expanded {
+						transform: rotate(180deg);
+					}
+				}
+			}
+		}
+
+		.records-list {
+			max-height: 400rpx;
+			overflow-y: auto;
+
+			.record-item {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 16rpx 0;
+				border-bottom: 1rpx solid #f5f5f5;
+
+				&:last-child {
+					border-bottom: none;
+				}
+
+				.record-date {
+					font-size: 26rpx;
+					color: #333;
+					width: 160rpx;
+				}
+
+				.record-info {
+					flex: 1;
+					display: flex;
+					flex-direction: column;
+
+					.record-amount {
+						font-size: 26rpx;
+						color: #333;
+					}
+
+					.record-shares {
+						font-size: 22rpx;
+						color: #999;
+					}
+				}
+
+				.record-nav {
+					font-size: 24rpx;
+					color: #666;
+				}
+			}
+
+			.load-more {
+				padding: 16rpx;
+				text-align: center;
+				font-size: 26rpx;
+				color: #3498db;
+			}
+		}
+	}
+}
+
+/* 调试面板样式 */
+.debug-panel {
+	margin-top: 20rpx;
+	background-color: #fffbe6;
+	border: 2rpx solid #ffe58f;
+	border-radius: 12rpx;
+	overflow: hidden;
+
+	.debug-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 16rpx 20rpx;
+		background-color: #fff7e6;
+		border-bottom: 1rpx solid #ffe58f;
+
+		.debug-title {
+			font-size: 28rpx;
+			font-weight: bold;
+			color: #d48806;
+		}
+
+		.debug-close {
+			font-size: 28rpx;
+			color: #999;
+			padding: 0 10rpx;
+		}
+	}
+
+	.debug-content {
+		padding: 20rpx;
+
+		.debug-item {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 12rpx 0;
+			border-bottom: 1rpx solid #fff1cc;
+
+			&:last-child {
+				border-bottom: none;
+			}
+
+			.debug-label {
+				font-size: 26rpx;
+				color: #666;
+			}
+
+			.debug-value {
+				font-size: 26rpx;
+				color: #333;
+				font-weight: 500;
+			}
+
+			.debug-picker {
+				padding: 8rpx 16rpx;
+				background-color: #fff;
+				border: 1rpx solid #ddd;
+				border-radius: 6rpx;
+				font-size: 26rpx;
+				color: #333;
+			}
+		}
+
+		.debug-actions {
+			display: flex;
+			gap: 16rpx;
+			margin-top: 20rpx;
+
+			.debug-btn {
+				flex: 1;
+				padding: 16rpx;
+				text-align: center;
+				background-color: #3498db;
+				color: #fff;
+				border-radius: 8rpx;
+				font-size: 26rpx;
+
+				&.warning {
+					background-color: #fff;
+					color: #ff4d4f;
+					border: 1rpx solid #ff4d4f;
+				}
+			}
+		}
+
+		.debug-result {
+			margin-top: 20rpx;
+			padding: 16rpx;
+			background-color: #f6f6f6;
+			border-radius: 8rpx;
+
+			.debug-result-title {
+				display: block;
+				font-size: 24rpx;
+				color: #666;
+				margin-bottom: 8rpx;
+			}
+
+			.debug-result-text {
+				display: block;
+				font-size: 24rpx;
+				color: #333;
+				line-height: 1.8;
+				white-space: pre-wrap;
+				font-family: monospace;
+			}
 		}
 	}
 }

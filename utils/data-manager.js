@@ -451,4 +451,97 @@ export class DataManager {
       return false;
     }
   }
+
+  // ========== 定投相关方法 ==========
+
+  /**
+   * 更新定投计划
+   * @param {string} fundCode - 基金代码
+   * @param {Object} investPlan - 定投计划对象
+   * @returns {Boolean} 更新是否成功
+   */
+  static updateInvestPlan(fundCode, investPlan) {
+    try {
+      const fundList = this.getFundList();
+      const fundIndex = fundList.findIndex(item => item.code === fundCode);
+
+      if (fundIndex === -1) {
+        return false;
+      }
+
+      fundList[fundIndex].investPlan = investPlan;
+      uni.setStorageSync('fundList', fundList);
+      return true;
+    } catch (e) {
+      console.error('更新定投计划失败:', e);
+      return false;
+    }
+  }
+
+  /**
+   * 更新定投记录
+   * @param {string} fundCode - 基金代码
+   * @param {Array} investRecords - 定投记录数组
+   * @param {Object} holdingUpdate - 可选，持仓更新数据 { num, cost }
+   * @returns {Boolean} 更新是否成功
+   */
+  static updateInvestRecords(fundCode, investRecords, holdingUpdate = null) {
+    try {
+      const fundList = this.getFundList();
+      const fundIndex = fundList.findIndex(item => item.code === fundCode);
+
+      if (fundIndex === -1) {
+        return false;
+      }
+
+      fundList[fundIndex].investRecords = investRecords;
+
+      // 如果提供了持仓更新数据，同时更新持仓
+      if (holdingUpdate) {
+        fundList[fundIndex].num = holdingUpdate.num;
+        fundList[fundIndex].cost = holdingUpdate.cost;
+      }
+
+      uni.setStorageSync('fundList', fundList);
+      return true;
+    } catch (e) {
+      console.error('更新定投记录失败:', e);
+      return false;
+    }
+  }
+
+  /**
+   * 删除定投计划（重置为未开启状态，保留份额）
+   * @param {string} fundCode - 基金代码
+   * @returns {Boolean} 删除是否成功
+   */
+  static deleteInvestPlan(fundCode) {
+    try {
+      const fundList = this.getFundList();
+      const fundIndex = fundList.findIndex(item => item.code === fundCode);
+
+      if (fundIndex === -1) {
+        return false;
+      }
+
+      const fund = fundList[fundIndex];
+      // 重置定投计划为默认状态（保留定投记录）
+      fund.investPlan = {
+        enabled: false,
+        cycle: 'weekly',
+        amount: 100,
+        dayOfWeek: 1,
+        dayOfMonth: 1,
+        startDate: new Date().toISOString().slice(0, 10),
+        lastInvestDate: null
+      };
+      // 定投记录保留，不删除
+
+      uni.setStorageSync('fundList', fundList);
+      return true;
+    } catch (e) {
+      console.error('删除定投计划失败:', e);
+      return false;
+    }
+  }
 }

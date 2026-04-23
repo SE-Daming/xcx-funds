@@ -123,6 +123,7 @@
 						<view class="fund-name-row">
 							<text class="fund-name">{{ fund.name }}</text>
 							<text class="group-tag" v-if="getFundGroupName(fund)">{{ getFundGroupName(fund) }}</text>
+							<text class="invest-tag" v-if="getInvestTag(fund)">{{ getInvestTag(fund) }}</text>
 						</view>
 						<view class="fund-code-row">
 							<text class="fund-code">{{ fund.code }}</text>
@@ -467,6 +468,13 @@ export default {
 					return name;
 				}
 			}
+			return '';
+		},
+		getInvestTag(fund) {
+			if (!fund || !fund.investPlan) return '';
+			if (fund.investPlan.enabled) return '📅 定投';
+			// 暂停：有定投计划且之前同步过
+			if (fund.investPlan.lastInvestDate) return '⏸️ 暂停';
 			return '';
 		},
 		goToGroupManage() {
@@ -1140,6 +1148,16 @@ export default {
 						padding: 2rpx 10rpx;
 						background-color: #e8f4fd;
 						color: #2979ff;
+						border-radius: 6rpx;
+						flex-shrink: 0;
+					}
+
+					.invest-tag {
+						margin-left: 8rpx;
+						font-size: 20rpx;
+						padding: 2rpx 10rpx;
+						background-color: #fff7e6;
+						color: #fa8c16;
 						border-radius: 6rpx;
 						flex-shrink: 0;
 					}
