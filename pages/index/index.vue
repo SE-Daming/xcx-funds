@@ -219,6 +219,44 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- 一键导入教程弹窗 -->
+		<view class="modal-mask" v-if="showImportModal" @click="closeImportModal">
+			<view class="modal-content import-modal" @click.stop>
+				<view class="modal-title">一键导入教程</view>
+				<view class="modal-body">
+					<view class="import-step">
+						<text class="step-num">①</text>
+						<text class="step-text">进入任意基金详情页</text>
+					</view>
+					<view class="import-step">
+						<text class="step-num">②</text>
+						<text class="step-text">截图（需包含"持有数量"和"入手单价"）</text>
+					</view>
+					<view class="import-example">
+						<text class="example-title">示例截图：</text>
+						<!-- TODO: 替换为实际示例图片 -->
+						<image class="example-image" src="/static/import-example.png" mode="widthFix" />
+					</view>
+					<view class="import-step">
+						<text class="step-num">③</text>
+						<text class="step-text">点击下方"复制提示词"</text>
+					</view>
+					<view class="import-step">
+						<text class="step-num">④</text>
+						<text class="step-text">发送截图+提示词给豆包/DeepSeek</text>
+					</view>
+					<view class="import-step">
+						<text class="step-num">⑤</text>
+						<text class="step-text">复制AI返回的JSON → 设置 → 新增/导入配置</text>
+					</view>
+				</view>
+				<view class="modal-footer">
+					<button class="modal-btn confirm" @click="copyImportPrompt">复制提示词</button>
+					<button class="modal-btn cancel" @click="closeImportModal">关闭</button>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -266,7 +304,9 @@ export default {
 			// 设置分组
 			showMoveGroup: false,
 			moveFund: null,
-			moveSelectedGroupIds: []
+			moveSelectedGroupIds: [],
+			// 一键导入弹窗
+			showImportModal: false
 		}
 	},
 	computed: {
@@ -619,24 +659,17 @@ export default {
 			uni.navigateTo({ url: '/pages/fund/add' });
 		},
 		showImportTutorial() {
+			this.showImportModal = true;
+		},
+		closeImportModal() {
+			this.showImportModal = false;
+		},
+		copyImportPrompt() {
 			const prompt = '请识别图片中的基金持仓信息（基金代码、基金名称、持有份额、持仓成本价），并严格按以下 JSON 格式输出，不要包含任何多余文字：';
 			const exampleJson = `{"fundList":[{"code":"000001","name":"基金名称示例","num":1234.56,"cost":1.0245}]}`;
-			const content = '① 截图持仓界面\n \n② 点击"复制"获取提示词\n\n③ 发送截图+提示词给豆包/DeepSeek\n\n④ 复制AI返回的JSON\n\n⑤ "设置"→"新增/导入配置"导入';
-
-			uni.showModal({
-				title: '一键导入教程',
-				content: content,
-				showCancel: true,
-				cancelText: '复制',
-				confirmText: '关闭',
-				success: (res) => {
-					if (res.cancel) {
-						uni.setClipboardData({
-							data: `提示词：${prompt}\n\nJSON示例：\n${exampleJson}`,
-							success: () => uni.showToast({ title: '已复制', icon: 'none' })
-						});
-					}
-				}
+			uni.setClipboardData({
+				data: `提示词：${prompt}\n\nJSON示例：\n${exampleJson}`,
+				success: () => uni.showToast({ title: '已复制', icon: 'none' })
 			});
 		},
 		goToFundDetail(fund) {
@@ -1384,6 +1417,55 @@ export default {
 	&.confirm {
 		color: #3498db;
 		font-weight: 500;
+	}
+}
+
+/* 一键导入弹窗样式 */
+.import-modal {
+	width: 650rpx;
+	max-height: 80vh;
+
+	.modal-body {
+		max-height: 60vh;
+		overflow-y: auto;
+	}
+}
+
+.import-step {
+	display: flex;
+	align-items: flex-start;
+	margin-bottom: 20rpx;
+
+	.step-num {
+		font-size: 28rpx;
+		color: #3498db;
+		font-weight: 600;
+		min-width: 50rpx;
+	}
+
+	.step-text {
+		font-size: 28rpx;
+		color: #333;
+		line-height: 1.5;
+	}
+}
+
+.import-example {
+	margin: 30rpx 0;
+	padding: 20rpx;
+	background-color: #f8f9fa;
+	border-radius: 12rpx;
+
+	.example-title {
+		display: block;
+		font-size: 26rpx;
+		color: #666;
+		margin-bottom: 16rpx;
+	}
+
+	.example-image {
+		width: 100%;
+		border-radius: 8rpx;
 	}
 }
 </style>
