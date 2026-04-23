@@ -433,8 +433,8 @@ export default {
 		getInvestTag(fund) {
 			if (!fund || !fund.investPlan) return '';
 			if (fund.investPlan.enabled) return '📅 定投';
-			// 有定投记录但已关闭
-			if (fund.investRecords && fund.investRecords.length > 0) return '⏸️ 暂停';
+			// 暂停：有定投计划且之前同步过
+			if (fund.investPlan.lastInvestDate) return '⏸️ 暂停';
 			return '';
 		},
 		goToGroupManage() {

@@ -146,15 +146,10 @@
 				</view>
 
 				<!-- 开始日期 -->
+				<!-- 开始日期（只读） -->
 				<view class="form-item">
 					<view class="label">开始日期</view>
-					<picker mode="date" :start="minStartDate" :end="today" :value="investPlan.startDate" @change="onStartDateChange">
-						<view class="picker-value">
-							{{ investPlan.startDate }}
-							<text class="picker-arrow">▼</text>
-						</view>
-					</picker>
-					<text class="date-hint">可选范围：2025-12-01 至今天</text>
+					<view class="readonly-value">{{ investPlan.startDate }}</view>
 				</view>
 
 				<!-- 定投统计（已有记录时显示） -->
@@ -190,8 +185,6 @@ import { getFundData } from '@/utils/fund-api.js';
 import { DataManager } from '@/utils/data-manager.js';
 import {
 	getDefaultInvestPlan,
-	getOneYearAgo,
-	getToday,
 	CYCLE_OPTIONS,
 	WEEK_DAY_OPTIONS,
 	MONTH_DAY_OPTIONS
@@ -225,9 +218,7 @@ export default {
 			investRecords: [],
 			cycleOptions: CYCLE_OPTIONS,
 			weekDayOptions: WEEK_DAY_OPTIONS,
-			monthDayOptions: MONTH_DAY_OPTIONS,
-			minStartDate: '2025-12-01', // 定投开始日期最小值
-			today: getToday()
+			monthDayOptions: MONTH_DAY_OPTIONS
 		}
 	},
 	computed: {
@@ -384,9 +375,6 @@ export default {
 			const index = e.detail.value;
 			this.investPlan.dayOfMonth = this.monthDayOptions[index].value;
 		},
-		onStartDateChange(e) {
-			this.investPlan.startDate = e.detail.value;
-		},
 		getMonthDayLabel(value) {
 			const option = this.monthDayOptions.find(o => o.value === value);
 			return option ? option.label : '1号';
@@ -394,14 +382,13 @@ export default {
 		deleteInvestPlan() {
 			uni.showModal({
 				title: '删除定投',
-				content: '删除后定投计划将清空，已累积的份额会保留在持仓中。确定要删除吗？',
+				content: '删除后定投计划将清空，已累积的份额和记录会保留。确定要删除吗？',
 				confirmColor: '#ff4d4f',
 				success: (res) => {
 					if (res.confirm) {
 						// 重置为默认定投计划（未开启状态）
 						this.investPlan = getDefaultInvestPlan();
-						// 清空定投记录
-						this.investRecords = [];
+						// 定投记录保留
 					}
 				}
 			});

@@ -525,7 +525,7 @@ export class DataManager {
       }
 
       const fund = fundList[fundIndex];
-      // 重置定投计划为默认状态
+      // 重置定投计划为默认状态（保留定投记录）
       fund.investPlan = {
         enabled: false,
         cycle: 'weekly',
@@ -535,8 +535,7 @@ export class DataManager {
         startDate: new Date().toISOString().slice(0, 10),
         lastInvestDate: null
       };
-      // 清空定投记录
-      fund.investRecords = [];
+      // 定投记录保留，不删除
 
       uni.setStorageSync('fundList', fundList);
       return true;

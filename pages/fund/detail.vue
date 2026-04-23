@@ -79,30 +79,30 @@
 		</view>
 
 		<!-- 定投统计卡片 -->
-		<view class="detail-card invest-card" v-if="hasInvestPlan">
+		<view class="detail-card invest-card">
 			<view class="card-title-row">
 				<view class="card-title">定投统计</view>
 				<view class="invest-status" :class="investStatusClass">{{ investStatusLabel }}</view>
 			</view>
 
 			<!-- 定投汇总数据 -->
-			<view class="invest-summary" v-if="investSummary">
+			<view class="invest-summary">
 				<view class="summary-grid">
 					<view class="summary-item">
-						<text class="summary-value">{{ investSummary.totalAmount }}</text>
+						<text class="summary-value">{{ displayInvestSummary.totalAmount }}</text>
 						<text class="summary-label">累计投入(元)</text>
 					</view>
 					<view class="summary-item">
-						<text class="summary-value">{{ investSummary.totalShares }}</text>
+						<text class="summary-value">{{ displayInvestSummary.totalShares }}</text>
 						<text class="summary-label">累计份额</text>
 					</view>
 					<view class="summary-item">
-						<text class="summary-value">{{ investSummary.currentValue }}</text>
+						<text class="summary-value">{{ displayInvestSummary.currentValue }}</text>
 						<text class="summary-label">当前市值(元)</text>
 					</view>
 					<view class="summary-item">
-						<text class="summary-value" :class="{'red': investSummary.profit >= 0, 'green': investSummary.profit < 0}">
-							{{ investSummary.profit >= 0 ? '+' : '' }}{{ investSummary.profit }}
+						<text class="summary-value" :class="{'red': displayInvestSummary.profit >= 0, 'green': displayInvestSummary.profit < 0}">
+							{{ displayInvestSummary.profit >= 0 ? '+' : '' }}{{ displayInvestSummary.profit }}
 						</text>
 						<text class="summary-label">收益(元)</text>
 					</view>
@@ -110,23 +110,23 @@
 				<view class="summary-footer">
 					<view class="footer-item">
 						<text class="footer-label">定投均价</text>
-						<text class="footer-value">{{ investSummary.avgCost }}元</text>
+						<text class="footer-value">{{ displayInvestSummary.avgCost }}元</text>
 					</view>
 					<view class="footer-item">
 						<text class="footer-label">已执行</text>
-						<text class="footer-value">{{ investSummary.investCount }}期</text>
+						<text class="footer-value">{{ displayInvestSummary.investCount }}期</text>
 					</view>
 					<view class="footer-item">
 						<text class="footer-label">收益率</text>
-						<text class="footer-value" :class="{'red': investSummary.profitRate >= 0, 'green': investSummary.profitRate < 0}">
-							{{ investSummary.profitRate >= 0 ? '+' : '' }}{{ investSummary.profitRate }}%
+						<text class="footer-value" :class="{'red': displayInvestSummary.profitRate >= 0, 'green': displayInvestSummary.profitRate < 0}">
+							{{ displayInvestSummary.profitRate >= 0 ? '+' : '' }}{{ displayInvestSummary.profitRate }}%
 						</text>
 					</view>
 				</view>
 			</view>
 
 			<!-- 同步定投按钮 -->
-			<view class="sync-btn-wrapper" v-if="investPlan.enabled">
+			<view class="sync-btn-wrapper" v-if="investPlan && investPlan.enabled">
 				<view class="sync-hint" v-if="syncHint">
 					<text>{{ syncHint }}</text>
 					<text class="pending-badge" v-if="pendingSyncCount > 0">待同步 {{ pendingSyncCount }} 期</text>
@@ -158,7 +158,7 @@
 					</view>
 					<view class="debug-item">
 						<text class="debug-label">上次执行</text>
-						<text class="debug-value">{{ investPlan.lastInvestDate || '无' }}</text>
+						<text class="debug-value">{{ investPlan?.lastInvestDate || '无' }}</text>
 					</view>
 					<view class="debug-actions">
 						<view class="debug-btn" @click="runDebugSync">模拟同步</view>
@@ -307,6 +307,19 @@ export default {
 		investStatusClass() {
 			if (!this.investPlan) return '';
 			return this.investPlan.enabled ? 'status-active' : 'status-paused';
+		},
+		// 定投汇总数据（带默认值）
+		displayInvestSummary() {
+			const empty = {
+				totalAmount: 0,
+				totalShares: 0,
+				currentValue: 0,
+				profit: 0,
+				avgCost: 0,
+				investCount: 0,
+				profitRate: 0
+			};
+			return this.investSummary || empty;
 		},
 		displayRecords() {
 			return this.investRecords.slice(0, this.recordsPageSize * this.recordsCurrentPage);
