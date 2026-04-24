@@ -198,6 +198,58 @@
 					</view>
 				</view>
 			</view>
+
+			<!-- 定投计划卡片 -->
+			<view class="detail-card invest-plan-card">
+				<view class="card-title-row">
+					<view class="card-title">定投计划</view>
+					<view class="invest-status" :class="investStatusClass" v-if="investPlan">{{ investStatusLabel }}</view>
+				</view>
+
+				<!-- 有定投计划 -->
+				<view class="plan-info" v-if="investPlan">
+					<view class="plan-row">
+						<text class="plan-label">周期</text>
+						<text class="plan-value">{{ getCycleLabel(investPlan.cycle) }}</text>
+					</view>
+					<view class="plan-row">
+						<text class="plan-label">金额</text>
+						<text class="plan-value">{{ investPlan.amount }}元/期</text>
+					</view>
+					<view class="plan-row">
+						<text class="plan-label">开始</text>
+						<text class="plan-value">{{ investPlan.startDate }}</text>
+					</view>
+					<view class="plan-row" v-if="investPlan.cycle === 'weekly'">
+						<text class="plan-label">定投日</text>
+						<text class="plan-value">每周{{ getWeekDayLabel(investPlan.dayOfWeek) }}</text>
+					</view>
+					<view class="plan-row" v-if="investPlan.cycle === 'monthly'">
+						<text class="plan-label">定投日</text>
+						<text class="plan-value">每月{{ investPlan.dayOfMonth }}号</text>
+					</view>
+				</view>
+
+				<!-- 无定投计划 -->
+				<view class="plan-empty" v-else>
+					<text class="empty-text">暂无定投计划</text>
+				</view>
+
+				<!-- 操作按钮 -->
+				<view class="plan-actions">
+					<!-- 无定投计划：设置定投 -->
+					<view class="plan-action-btn primary" v-if="!investPlan" @click="goToEditFund">设置定投</view>
+
+					<!-- 有定投计划 -->
+					<template v-else>
+						<view class="plan-action-btn" @click="goToEditFund">修改</view>
+						<view class="plan-action-btn" :class="investPlan.enabled ? 'warning' : 'primary'" @click="toggleInvestPlan">
+							{{ investPlan.enabled ? '暂停' : '开启' }}
+						</view>
+						<view class="plan-action-btn danger" @click="deleteInvestPlan">删除</view>
+					</template>
+				</view>
+			</view>
 		</view>
 
 		<!-- 图表区域 -->
@@ -306,11 +358,16 @@ export default {
 		},
 		investStatusLabel() {
 			if (!this.investPlan) return '';
-			return this.investPlan.enabled ? '进行中' : '未开启';
+			if (this.investPlan.enabled) return '进行中';
+			// 有关闭前同步过的记录，说明是暂停状态
+			if (this.investPlan.lastInvestDate) return '已暂停';
+			return '未开启';
 		},
 		investStatusClass() {
 			if (!this.investPlan) return '';
-			return this.investPlan.enabled ? 'status-active' : 'status-paused';
+			if (this.investPlan.enabled) return 'status-active';
+			if (this.investPlan.lastInvestDate) return 'status-paused';
+			return '';
 		},
 		// 定投汇总数据（带默认值）
 		displayInvestSummary() {
@@ -759,7 +816,54 @@ export default {
 		loadMoreRecords() {
 			this.recordsCurrentPage++;
 		},
-			editFund() {
+			getCycleLabel(cycle) {
+			const cycleMap = {
+				'daily': '每日',
+				'weekly': '每周',
+				'monthly': '每月'
+			};
+			return cycleMap[cycle] || cycle;
+		},
+		getWeekDayLabel(day) {
+			const dayMap = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五' };
+			return dayMap[day] || day;
+		},
+		goToEditFund() {
+			uni.navigateTo({
+				url: `/pages/fund/edit?code=${this.fundCode}`
+			});
+		},
+		toggleInvestPlan() {
+			const action = this.investPlan.enabled ? '暂停' : '开启';
+			uni.showModal({
+				title: `${action}定投`,
+				content: `确定要${action}定投计划吗？`,
+				success: (res) => {
+					if (res.confirm) {
+						this.investPlan.enabled = !this.investPlan.enabled;
+						DataManager.updateInvestPlan(this.fundCode, this.investPlan);
+						uni.showToast({ title: `已${action}`, icon: 'success' });
+					}
+				}
+			});
+		},
+		deleteInvestPlan() {
+			uni.showModal({
+				title: '删除定投',
+				content: '删除后定投计划将清空，已累积的份额和记录会保留。确定要删除吗？',
+				confirmColor: '#ff4d4f',
+				success: (res) => {
+					if (res.confirm) {
+						this.investPlan = null;
+						this.investRecords = [];
+						this.investSummary = null;
+						DataManager.deleteInvestPlan(this.fundCode);
+						uni.showToast({ title: '已删除', icon: 'success' });
+					}
+				}
+			});
+		},
+		editFund() {
 			uni.navigateTo({
 				url: `/pages/fund/edit?code=${this.fundCode}`
 			});
@@ -1334,6 +1438,78 @@ export default {
 				font-size: 26rpx;
 				color: #3498db;
 			}
+		}
+	}
+}
+
+/* 定投计划卡片 */
+.invest-plan-card {
+	.plan-info {
+		padding: 20rpx 0;
+	}
+
+	.plan-row {
+		display: flex;
+		justify-content: space-between;
+		padding: 12rpx 0;
+		border-bottom: 1rpx solid #f0f0f0;
+
+		&:last-child {
+			border-bottom: none;
+		}
+	}
+
+	.plan-label {
+		color: #666;
+		font-size: 28rpx;
+	}
+
+	.plan-value {
+		color: #333;
+		font-size: 28rpx;
+		font-weight: 500;
+	}
+
+	.plan-actions {
+		margin-top: 20rpx;
+		padding-top: 20rpx;
+		border-top: 1rpx solid #f0f0f0;
+		display: flex;
+		gap: 16rpx;
+	}
+
+	.plan-action-btn {
+		flex: 1;
+		padding: 16rpx 0;
+		text-align: center;
+		background-color: #f5f5f5;
+		border-radius: 8rpx;
+		font-size: 28rpx;
+		color: #3498db;
+
+		&.primary {
+			background-color: #3498db;
+			color: #fff;
+		}
+
+		&.warning {
+			background-color: #fff7e6;
+			color: #fa8c16;
+		}
+
+		&.danger {
+			background-color: #fff1f0;
+			color: #ff4d4f;
+		}
+	}
+
+	.plan-empty {
+		padding: 30rpx 0;
+		text-align: center;
+
+		.empty-text {
+			color: #999;
+			font-size: 28rpx;
 		}
 	}
 }

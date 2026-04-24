@@ -511,7 +511,7 @@ export class DataManager {
   }
 
   /**
-   * 删除定投计划（重置为未开启状态，保留份额）
+   * 删除定投计划（完全删除）
    * @param {string} fundCode - 基金代码
    * @returns {Boolean} 删除是否成功
    */
@@ -525,17 +525,10 @@ export class DataManager {
       }
 
       const fund = fundList[fundIndex];
-      // 重置定投计划为默认状态（保留定投记录）
-      fund.investPlan = {
-        enabled: false,
-        cycle: 'weekly',
-        amount: 100,
-        dayOfWeek: 1,
-        dayOfMonth: 1,
-        startDate: new Date().toISOString().slice(0, 10),
-        lastInvestDate: null
-      };
-      // 定投记录保留，不删除
+      // 完全删除定投计划
+      fund.investPlan = null;
+      // 定投记录也清空
+      fund.investRecords = [];
 
       uni.setStorageSync('fundList', fundList);
       return true;
