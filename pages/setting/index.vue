@@ -148,7 +148,11 @@ export default {
 										// 兼容新旧数据结构
 										groupIds: fund.groupIds || (fund.groupId ? [fund.groupId] : []),
 										// 保留备注字段
-										remark: fund.remark || ''
+										remark: fund.remark || '',
+										// 保留定投计划
+										investPlan: fund.investPlan || null,
+										// 保留定投记录
+										investRecords: fund.investRecords || []
 									})).filter(f => f.code);
 
 									if (newSettings) {
@@ -230,7 +234,13 @@ export default {
 												num: parseFloat(fund.num) || 0,
 												cost: parseFloat(fund.cost) || 0,
 												// 兼容新旧数据结构
-												groupIds: fund.groupIds || (fund.groupId ? [fund.groupId] : [])
+												groupIds: fund.groupIds || (fund.groupId ? [fund.groupId] : []),
+												// 保留备注
+												remark: fund.remark || '',
+												// 保留定投计划
+												investPlan: fund.investPlan || null,
+												// 保留定投记录
+												investRecords: fund.investRecords || []
 											};
 
 											if (!existingCodes.has(normalizedFund.code)) {
