@@ -412,7 +412,7 @@ export function getDefaultInvestPlan() {
     amount: 100,
     dayOfWeek: 1,      // 默认周一
     dayOfMonth: 1,     // 默认每月1号
-    startDate: getToday(),
+    startDate: '2026-04-01',
     lastInvestDate: null
   };
 }

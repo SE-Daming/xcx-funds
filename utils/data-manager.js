@@ -511,7 +511,7 @@ export class DataManager {
   }
 
   /**
-   * 删除定投计划（完全删除）
+   * 删除定投计划（保留定投记录）
    * @param {string} fundCode - 基金代码
    * @returns {Boolean} 删除是否成功
    */
@@ -525,10 +525,9 @@ export class DataManager {
       }
 
       const fund = fundList[fundIndex];
-      // 完全删除定投计划
+      // 删除定投计划，但保留定投记录
       fund.investPlan = null;
-      // 定投记录也清空
-      fund.investRecords = [];
+      // 定投记录保留
 
       uni.setStorageSync('fundList', fundList);
       return true;
