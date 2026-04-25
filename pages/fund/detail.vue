@@ -86,7 +86,6 @@
 		<view class="detail-card invest-card">
 			<view class="card-title-row">
 				<view class="card-title">定投统计</view>
-				<view class="invest-status" :class="investStatusClass">{{ investStatusLabel }}</view>
 			</view>
 
 			<!-- 定投汇总数据 -->
@@ -187,12 +186,17 @@
 			</view>
 			<view class="records-list" v-if="recordsExpanded">
 				<view class="record-item" v-for="(record, index) in displayRecords" :key="index">
-					<view class="record-date">{{ record.date }}</view>
-					<view class="record-info">
-						<text class="record-amount">投入{{ record.amount }}元</text>
-						<text class="record-shares">买入{{ record.shares.toFixed(2) }}份</text>
+					<view class="record-date">
+						<text class="date-text">{{ formatRecordDate(record.date) }}</text>
+						<text class="week-text">{{ getWeekDay(record.date) }}</text>
 					</view>
-					<view class="record-nav">净值 {{ record.nav }}</view>
+					<view class="record-info">
+						<text class="record-amount">{{ record.amount }}</text>
+						<text class="record-shares">{{ record.shares.toFixed(2) }}份</text>
+					</view>
+					<view class="record-nav">
+						<text class="nav-value">{{ record.nav }}</text>
+					</view>
 				</view>
 				<view class="load-more" v-if="hasMoreRecords" @click="loadMoreRecords">
 					<text>加载更多</text>
@@ -816,6 +820,16 @@ export default {
 		loadMoreRecords() {
 			this.recordsCurrentPage++;
 		},
+		formatRecordDate(dateStr) {
+			// 2025-04-01 -> 04-01
+			if (!dateStr) return '';
+			return dateStr.substring(5);
+		},
+		getWeekDay(dateStr) {
+			const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+			const date = new Date(dateStr);
+			return weekDays[date.getDay()];
+		},
 			getCycleLabel(cycle) {
 			const cycleMap = {
 				'daily': '每日',
@@ -1243,22 +1257,6 @@ export default {
 
 /* Invest Card */
 .invest-card {
-	.invest-status {
-		font-size: 22rpx;
-		padding: 4rpx 16rpx;
-		border-radius: 12rpx;
-
-		&.status-active {
-			background-color: #e6f7ff;
-			color: #1890ff;
-		}
-
-		&.status-paused {
-			background-color: #fff7e6;
-			color: #fa8c16;
-		}
-	}
-
 	.invest-summary {
 		.summary-grid {
 			display: flex;
@@ -1360,83 +1358,122 @@ export default {
 			}
 		}
 	}
+}
 
-	/* 定投记录卡片 */
-	.invest-records-card {
-		.records-toggle {
+/* 状态标签样式（通用） */
+.invest-status {
+	font-size: 22rpx;
+	padding: 4rpx 16rpx;
+	border-radius: 12rpx;
+
+	&.status-active {
+		background-color: #e6f7ff;
+		color: #1890ff;
+	}
+
+	&.status-paused {
+		background-color: #fff7e6;
+		color: #fa8c16;
+	}
+}
+
+/* 定投记录卡片 */
+.invest-records-card {
+	.records-toggle {
+		display: flex;
+		align-items: center;
+		gap: 8rpx;
+		font-size: 24rpx;
+		color: #666;
+
+		.toggle-arrow {
+			font-size: 20rpx;
+			transition: transform 0.2s;
+
+			&.expanded {
+				transform: rotate(180deg);
+			}
+		}
+	}
+
+	.records-list {
+		max-height: 500rpx;
+		overflow-y: auto;
+
+		.record-item {
 			display: flex;
+			justify-content: space-between;
 			align-items: center;
-			gap: 8rpx;
-			font-size: 24rpx;
-			color: #666;
+			padding: 24rpx 0;
+			border-bottom: 1px solid #f0f0f0;
 
-			.toggle-arrow {
-				font-size: 20rpx;
-				transition: transform 0.2s;
+			&:last-child {
+				border-bottom: none;
+			}
 
-				&.expanded {
-					transform: rotate(180deg);
+			.record-date {
+				width: 140rpx;
+				flex-shrink: 0;
+
+				.date-text {
+					font-size: 28rpx;
+					color: #333;
+					display: block;
+				}
+
+				.week-text {
+					font-size: 22rpx;
+					color: #bbb;
+					display: block;
+					margin-top: 4rpx;
+				}
+			}
+
+			.record-info {
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 4rpx;
+
+				.record-amount {
+					font-size: 32rpx;
+					font-weight: 600;
+					color: #333;
+				}
+
+				.record-shares {
+					font-size: 22rpx;
+					color: #999;
+				}
+			}
+
+			.record-nav {
+				width: 100rpx;
+				text-align: right;
+				flex-shrink: 0;
+
+				.nav-value {
+					font-size: 28rpx;
+					color: #3498db;
+					font-weight: 500;
 				}
 			}
 		}
 
-		.records-list {
-			max-height: 400rpx;
-			overflow-y: auto;
-
-			.record-item {
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				padding: 16rpx 0;
-				border-bottom: 1rpx solid #f5f5f5;
-
-				&:last-child {
-					border-bottom: none;
-				}
-
-				.record-date {
-					font-size: 26rpx;
-					color: #333;
-					width: 160rpx;
-				}
-
-				.record-info {
-					flex: 1;
-					display: flex;
-					flex-direction: column;
-
-					.record-amount {
-						font-size: 26rpx;
-						color: #333;
-					}
-
-					.record-shares {
-						font-size: 22rpx;
-						color: #999;
-					}
-				}
-
-				.record-nav {
-					font-size: 24rpx;
-					color: #666;
-				}
-			}
-
-			.load-more {
-				padding: 16rpx;
-				text-align: center;
-				font-size: 26rpx;
-				color: #3498db;
-			}
+		.load-more {
+			padding: 24rpx 0;
+			text-align: center;
+			font-size: 26rpx;
+			color: #3498db;
 		}
 	}
 }
 
-/* 定投计划卡片 */
-.invest-plan-card {
-	.card-title-row {
-		.card-title {
+	/* 定投计划卡片 */
+	.invest-plan-card {
+		.card-title-row {
+			.card-title {
 			padding-left: 16rpx;
 			border-left: 6rpx solid $uni-color-primary;
 		}
