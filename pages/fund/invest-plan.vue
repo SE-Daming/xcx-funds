@@ -108,6 +108,7 @@
 import { DataManager } from '@/utils/data-manager.js';
 import {
 	getDefaultInvestPlan,
+	getToday,
 	CYCLE_OPTIONS,
 	WEEK_DAY_OPTIONS,
 	MONTH_DAY_OPTIONS
@@ -181,6 +182,11 @@ export default {
 			if (this.investPlan.enabled && !this.investPlan.amount) {
 				uni.showToast({ title: '请输入每期金额', icon: 'none' });
 				return;
+			}
+
+			// 如果是修改已有计划，更新开始日期为今天
+			if (this.hasExistingPlan) {
+				this.investPlan.startDate = getToday();
 			}
 
 			// 保存定投计划
