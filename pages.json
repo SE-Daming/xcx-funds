@@ -25,6 +25,12 @@
 			}
 		},
 		{
+			"path": "pages/fund/invest-plan",
+			"style": {
+				"navigationBarTitleText": "定投计划"
+			}
+		},
+		{
 			"path": "pages/fund/add",
 			"style": {
 				"navigationBarTitleText": "添加藏品"

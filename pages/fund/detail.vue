@@ -238,11 +238,11 @@
 				<!-- 操作按钮 -->
 				<view class="plan-actions">
 					<!-- 无定投计划：设置定投 -->
-					<view class="plan-action-btn primary" v-if="!investPlan" @click="goToEditFund">设置定投</view>
+					<view class="plan-action-btn primary" v-if="!investPlan" @click="goToInvestPlan">设置定投</view>
 
 					<!-- 有定投计划 -->
 					<template v-else>
-						<view class="plan-action-btn" @click="goToEditFund">修改</view>
+						<view class="plan-action-btn" @click="goToInvestPlan">修改</view>
 						<view class="plan-action-btn" :class="investPlan.enabled ? 'warning' : 'primary'" @click="toggleInvestPlan">
 							{{ investPlan.enabled ? '暂停' : '开启' }}
 						</view>
@@ -828,7 +828,12 @@ export default {
 			const dayMap = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五' };
 			return dayMap[day] || day;
 		},
-		goToEditFund() {
+		goToInvestPlan() {
+				uni.navigateTo({
+					url: `/pages/fund/invest-plan?code=${this.fundCode}`
+				});
+			},
+			goToEditFund() {
 			uni.navigateTo({
 				url: `/pages/fund/edit?code=${this.fundCode}`
 			});
