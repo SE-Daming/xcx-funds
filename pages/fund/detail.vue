@@ -174,28 +174,28 @@
 					</view>
 				</view>
 			</view>
+		</view>
 
-			<!-- 定投记录列表 -->
-			<view class="invest-records" v-if="investRecords.length > 0">
-				<view class="records-header" @click="toggleRecordsExpanded">
-					<text class="records-title">定投记录</text>
-					<view class="records-toggle">
-						<text>{{ investRecords.length }}条</text>
-						<text class="toggle-arrow" :class="{ 'expanded': recordsExpanded }">▼</text>
-					</view>
+		<!-- 定投记录卡片 -->
+		<view class="detail-card invest-records-card" v-if="investRecords.length > 0">
+			<view class="card-title-row" @click="toggleRecordsExpanded">
+				<view class="card-title">定投记录</view>
+				<view class="records-toggle">
+					<text>{{ investRecords.length }}条</text>
+					<text class="toggle-arrow" :class="{ 'expanded': recordsExpanded }">▼</text>
 				</view>
-				<view class="records-list" v-if="recordsExpanded">
-					<view class="record-item" v-for="(record, index) in displayRecords" :key="index">
-						<view class="record-date">{{ record.date }}</view>
-						<view class="record-info">
-							<text class="record-amount">投入{{ record.amount }}元</text>
-							<text class="record-shares">买入{{ record.shares.toFixed(2) }}份</text>
-						</view>
-						<view class="record-nav">净值 {{ record.nav }}</view>
+			</view>
+			<view class="records-list" v-if="recordsExpanded">
+				<view class="record-item" v-for="(record, index) in displayRecords" :key="index">
+					<view class="record-date">{{ record.date }}</view>
+					<view class="record-info">
+						<text class="record-amount">投入{{ record.amount }}元</text>
+						<text class="record-shares">买入{{ record.shares.toFixed(2) }}份</text>
 					</view>
-					<view class="load-more" v-if="hasMoreRecords" @click="loadMoreRecords">
-						<text>加载更多</text>
-					</view>
+					<view class="record-nav">净值 {{ record.nav }}</view>
+				</view>
+				<view class="load-more" v-if="hasMoreRecords" @click="loadMoreRecords">
+					<text>加载更多</text>
 				</view>
 			</view>
 		</view>
@@ -329,7 +329,7 @@ export default {
 			investRecords: [],
 			investSummary: null,
 			syncLoading: false,
-			recordsExpanded: false,
+				recordsExpanded: false,
 			recordsPageSize: 20,
 			recordsCurrentPage: 1,
 			// 调试相关
@@ -1361,37 +1361,21 @@ export default {
 		}
 	}
 
-	.invest-records {
-		margin-top: 20rpx;
-		border-top: 1rpx solid #eee;
-		padding-top: 20rpx;
-
-		.records-header {
+	/* 定投记录卡片 */
+	.invest-records-card {
+		.records-toggle {
 			display: flex;
-			justify-content: space-between;
 			align-items: center;
-			padding-bottom: 16rpx;
+			gap: 8rpx;
+			font-size: 24rpx;
+			color: #666;
 
-			.records-title {
-				font-size: 28rpx;
-				font-weight: bold;
-				color: #333;
-			}
+			.toggle-arrow {
+				font-size: 20rpx;
+				transition: transform 0.2s;
 
-			.records-toggle {
-				display: flex;
-				align-items: center;
-				gap: 8rpx;
-				font-size: 24rpx;
-				color: #666;
-
-				.toggle-arrow {
-					font-size: 20rpx;
-					transition: transform 0.2s;
-
-					&.expanded {
-						transform: rotate(180deg);
-					}
+				&.expanded {
+					transform: rotate(180deg);
 				}
 			}
 		}
