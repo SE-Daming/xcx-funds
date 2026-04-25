@@ -198,57 +198,57 @@
 					</view>
 				</view>
 			</view>
+		</view>
 
-			<!-- 定投计划卡片 -->
-			<view class="detail-card invest-plan-card">
-				<view class="card-title-row">
-					<view class="card-title">定投计划</view>
-					<view class="invest-status" :class="investStatusClass" v-if="investPlan">{{ investStatusLabel }}</view>
+		<!-- 定投计划卡片 -->
+		<view class="detail-card invest-plan-card">
+			<view class="card-title-row">
+				<view class="card-title">定投计划</view>
+				<view class="invest-status" :class="investStatusClass" v-if="investPlan">{{ investStatusLabel }}</view>
+			</view>
+
+			<!-- 有定投计划 -->
+			<view class="plan-info" v-if="investPlan">
+				<view class="plan-row">
+					<text class="plan-label">周期</text>
+					<text class="plan-value">{{ getCycleLabel(investPlan.cycle) }}</text>
 				</view>
+				<view class="plan-row">
+					<text class="plan-label">金额</text>
+					<text class="plan-value">{{ investPlan.amount }}元/期</text>
+				</view>
+				<view class="plan-row">
+					<text class="plan-label">开始</text>
+					<text class="plan-value">{{ investPlan.startDate }}</text>
+				</view>
+				<view class="plan-row" v-if="investPlan.cycle === 'weekly'">
+					<text class="plan-label">定投日</text>
+					<text class="plan-value">每周{{ getWeekDayLabel(investPlan.dayOfWeek) }}</text>
+				</view>
+				<view class="plan-row" v-if="investPlan.cycle === 'monthly'">
+					<text class="plan-label">定投日</text>
+					<text class="plan-value">每月{{ investPlan.dayOfMonth }}号</text>
+				</view>
+			</view>
+
+			<!-- 无定投计划 -->
+			<view class="plan-empty" v-else>
+				<text class="empty-text">暂无定投计划</text>
+			</view>
+
+			<!-- 操作按钮 -->
+			<view class="plan-actions">
+				<!-- 无定投计划：设置定投 -->
+				<view class="plan-action-btn primary" v-if="!investPlan" @click="goToInvestPlan">设置定投</view>
 
 				<!-- 有定投计划 -->
-				<view class="plan-info" v-if="investPlan">
-					<view class="plan-row">
-						<text class="plan-label">周期</text>
-						<text class="plan-value">{{ getCycleLabel(investPlan.cycle) }}</text>
+				<template v-else>
+					<view class="plan-action-btn" @click="goToInvestPlan">修改</view>
+					<view class="plan-action-btn" :class="investPlan.enabled ? 'warning' : 'primary'" @click="toggleInvestPlan">
+						{{ investPlan.enabled ? '暂停' : '开启' }}
 					</view>
-					<view class="plan-row">
-						<text class="plan-label">金额</text>
-						<text class="plan-value">{{ investPlan.amount }}元/期</text>
-					</view>
-					<view class="plan-row">
-						<text class="plan-label">开始</text>
-						<text class="plan-value">{{ investPlan.startDate }}</text>
-					</view>
-					<view class="plan-row" v-if="investPlan.cycle === 'weekly'">
-						<text class="plan-label">定投日</text>
-						<text class="plan-value">每周{{ getWeekDayLabel(investPlan.dayOfWeek) }}</text>
-					</view>
-					<view class="plan-row" v-if="investPlan.cycle === 'monthly'">
-						<text class="plan-label">定投日</text>
-						<text class="plan-value">每月{{ investPlan.dayOfMonth }}号</text>
-					</view>
-				</view>
-
-				<!-- 无定投计划 -->
-				<view class="plan-empty" v-else>
-					<text class="empty-text">暂无定投计划</text>
-				</view>
-
-				<!-- 操作按钮 -->
-				<view class="plan-actions">
-					<!-- 无定投计划：设置定投 -->
-					<view class="plan-action-btn primary" v-if="!investPlan" @click="goToInvestPlan">设置定投</view>
-
-					<!-- 有定投计划 -->
-					<template v-else>
-						<view class="plan-action-btn" @click="goToInvestPlan">修改</view>
-						<view class="plan-action-btn" :class="investPlan.enabled ? 'warning' : 'primary'" @click="toggleInvestPlan">
-							{{ investPlan.enabled ? '暂停' : '开启' }}
-						</view>
-						<view class="plan-action-btn danger" @click="deleteInvestPlan">删除</view>
-					</template>
-				</view>
+					<view class="plan-action-btn danger" @click="deleteInvestPlan">删除</view>
+				</template>
 			</view>
 		</view>
 
@@ -1014,6 +1014,8 @@ export default {
 
 		.card-title {
 			margin-bottom: 0;
+			padding-left: 16rpx;
+			border-left: 6rpx solid $uni-color-primary;
 		}
 	}
 }
@@ -1449,6 +1451,13 @@ export default {
 
 /* 定投计划卡片 */
 .invest-plan-card {
+	.card-title-row {
+		.card-title {
+			padding-left: 16rpx;
+			border-left: 6rpx solid $uni-color-primary;
+		}
+	}
+
 	.plan-info {
 		padding: 20rpx 0;
 	}
