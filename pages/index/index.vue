@@ -62,6 +62,13 @@
 				</view>
 				<text class="label">持仓分析</text>
 			</view>
+			<view class="action-item" @click="batchSyncInvest">
+				<view class="icon-box invest-icon" :class="{ 'has-pending': pendingInvestCount > 0 }">
+					<text class="icon">📅</text>
+					<view class="pending-badge" v-if="pendingInvestCount > 0">{{ pendingInvestCount }}</view>
+				</view>
+				<text class="label">同步定投</text>
+			</view>
 			<view class="action-item" @click="toggleEditMode">
 				<view class="icon-box edit-icon" :class="{ 'active': isEditMode }">
 					<text class="icon">⚙️</text>
@@ -258,12 +265,61 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- 同步定投进度弹窗 -->
+		<view class="modal-mask" v-if="showBatchSyncModal" @click.stop>
+			<view class="modal-content batch-sync-modal" @click.stop>
+				<view class="modal-title">同步定投</view>
+				<view class="modal-body">
+					<!-- 同步中 -->
+					<view class="sync-progress" v-if="batchSyncing">
+						<view class="progress-bar">
+							<view class="progress-fill" :style="{ width: syncProgress + '%' }"></view>
+						</view>
+						<view class="progress-text">
+							<text>正在同步 {{ currentSyncIndex }}/{{ totalSyncCount }}</text>
+							<text class="syncing-fund">{{ currentSyncFundName }}</text>
+						</view>
+					</view>
+					<!-- 同步完成 -->
+					<view class="sync-result" v-else>
+						<view class="result-summary">
+							<view class="result-item success">
+								<text class="result-num">{{ syncSuccessCount }}</text>
+								<text class="result-label">同步成功</text>
+							</view>
+							<view class="result-item skip" v-if="syncSkipCount > 0">
+								<text class="result-num">{{ syncSkipCount }}</text>
+								<text class="result-label">无需同步</text>
+							</view>
+							<view class="result-item fail" v-if="syncFailCount > 0">
+								<text class="result-num">{{ syncFailCount }}</text>
+								<text class="result-label">同步失败</text>
+							</view>
+						</view>
+						<view class="result-detail" v-if="syncSuccessCount > 0">
+							<view class="detail-title">已同步基金</view>
+							<view class="detail-list">
+								<view class="detail-item" v-for="(item, index) in syncResultList" :key="index">
+									<text class="detail-name">{{ item.name }}</text>
+									<text class="detail-info">+{{ item.newRecords }}期，投入{{ item.newAmount }}元</text>
+								</view>
+							</view>
+						</view>
+					</view>
+				</view>
+				<view class="modal-footer">
+					<button class="modal-btn cancel" @click="closeBatchSyncModal" v-if="!batchSyncing">{{ syncSuccessCount > 0 ? '完成' : '关闭' }}</button>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
 <script>
-import { getFundData } from '@/utils/fund-api.js';
+import { getFundData, getFundHistoryNav } from '@/utils/fund-api.js';
 import { DataManager } from '@/utils/data-manager.js';
+import { executeInvestment, mergeToHolding, generateInvestDates } from '@/utils/invest-plan.js';
 import PieChart from '@/components/pie-chart/pie-chart.vue';
 import ProfitDistribution from '@/components/profit-distribution/profit-distribution.vue';
 
@@ -307,7 +363,19 @@ export default {
 			moveFund: null,
 			moveSelectedGroupIds: [],
 			// 一键导入弹窗
-			showImportModal: false
+			showImportModal: false,
+				// 同步定投相关
+				showBatchSyncModal: false,
+				batchSyncing: false,
+				currentSyncIndex: 0,
+				totalSyncCount: 0,
+				currentSyncFundName: '',
+				syncSuccessCount: 0,
+				syncSkipCount: 0,
+				syncFailCount: 0,
+				syncResultList: [],
+				// 真正待同步的基金数量（有新期数未同步）
+				pendingSyncFundCount: 0
 		}
 	},
 	computed: {
@@ -321,6 +389,20 @@ export default {
 			if (!this.currentGroupId) return '';
 			const group = this.groupList.find(g => g.id === this.currentGroupId);
 			return group ? group.name : '';
+		},
+		// 是否有待同步的定投基金
+		hasPendingInvestFunds() {
+			// 只要有开启定投的基金就显示按钮
+			return this.allFundList.some(fund => fund.investPlan && fund.investPlan.enabled);
+		},
+		// 待同步基金数量（真正有新期数未同步的）
+		pendingInvestCount() {
+			return this.pendingSyncFundCount;
+		},
+		// 同步进度百分比
+		syncProgress() {
+			if (this.totalSyncCount === 0) return 0;
+			return Math.round((this.currentSyncIndex / this.totalSyncCount) * 100);
 		},
 		filteredTodayGains() {
 			return this.calculateGroupGains('gains');
@@ -517,12 +599,43 @@ export default {
 			this.applyGroupFilter();
 			if (this.allFundList.length > 0) {
 				this.fetchFundData();
+				// 计算真正待同步的基金数量
+				this.calcPendingSyncCount();
 			} else {
 				this.totalTodayGains = 0;
 				this.totalHoldGains = 0;
 				this.totalCost = 0;
 				this.totalAmount = 0;
+				this.pendingSyncFundCount = 0;
 			}
+		},
+		// 计算真正有待同步期数的基金数量
+		async calcPendingSyncCount() {
+			const investFunds = this.allFundList.filter(fund => fund.investPlan && fund.investPlan.enabled);
+			if (investFunds.length === 0) {
+				this.pendingSyncFundCount = 0;
+				return;
+			}
+
+			let count = 0;
+			for (const fund of investFunds) {
+				try {
+					const navHistory = await getFundHistoryNav(fund.code, 'n');
+					if (!navHistory || navHistory.length === 0) continue;
+
+					const tradingDays = navHistory.map(item => item.date);
+					const lastTradingDay = tradingDays[tradingDays.length - 1];
+					const investDates = generateInvestDates(fund.investPlan, lastTradingDay, tradingDays);
+
+					if (investDates.length > 0) {
+						count++;
+					}
+				} catch (e) {
+					console.error('计算待同步数量失败:', e);
+				}
+			}
+
+			this.pendingSyncFundCount = count;
 		},
 		async fetchFundData() {
 			if (this.allFundList.length === 0) return;
@@ -821,6 +934,128 @@ export default {
 			if (fund && fund.code) {
 				uni.navigateTo({ url: `/pages/fund/detail?code=${fund.code}` });
 			}
+		},
+		// ========== 同步定投相关方法 ==========
+		// 打开同步定投弹窗
+		batchSyncInvest() {
+			// 获取所有开启定投的基金
+			const investFunds = this.allFundList.filter(fund => fund.investPlan && fund.investPlan.enabled);
+			if (investFunds.length === 0) {
+				uni.showToast({ title: '没有开启定投的基金', icon: 'none' });
+				return;
+			}
+
+			// 初始化状态
+			this.showBatchSyncModal = true;
+			this.batchSyncing = true;
+			this.currentSyncIndex = 0;
+			this.totalSyncCount = investFunds.length;
+			this.currentSyncFundName = '';
+			this.syncSuccessCount = 0;
+			this.syncSkipCount = 0;
+			this.syncFailCount = 0;
+			this.syncResultList = [];
+
+			// 开始同步
+			this.doBatchSync(investFunds);
+		},
+		// 执行批量同步
+		async doBatchSync(investFunds) {
+			for (let i = 0; i < investFunds.length; i++) {
+				const fund = investFunds[i];
+				this.currentSyncIndex = i + 1;
+				this.currentSyncFundName = fund.name;
+
+				try {
+					const result = await this.syncSingleFund(fund);
+					if (result.success) {
+						if (result.newRecords > 0) {
+							this.syncSuccessCount++;
+							this.syncResultList.push({
+								name: fund.name,
+								code: fund.code,
+								newRecords: result.newRecords,
+								newAmount: result.newAmount
+							});
+						} else {
+							this.syncSkipCount++;
+						}
+					} else {
+						this.syncFailCount++;
+					}
+				} catch (e) {
+					console.error(`同步 ${fund.name} 失败:`, e);
+					this.syncFailCount++;
+				}
+			}
+
+			// 同步完成
+			this.batchSyncing = false;
+			this.currentSyncFundName = '';
+
+			// 刷新列表
+			this.loadFundList();
+
+			// 触发更新事件
+			uni.$emit('fundUpdated');
+		},
+		// 同步单个基金
+		syncSingleFund(fund) {
+			return new Promise(async (resolve) => {
+				try {
+					const investPlan = fund.investPlan;
+					if (!investPlan || !investPlan.enabled) {
+						resolve({ success: false, newRecords: 0 });
+						return;
+					}
+
+					// 获取历史净值数据
+					const navHistory = await getFundHistoryNav(fund.code, 'n');
+					if (!navHistory || navHistory.length === 0) {
+						resolve({ success: false, newRecords: 0 });
+						return;
+					}
+
+					// 获取已有定投记录
+					const existingRecords = fund.investRecords || [];
+
+					// 执行定投计算
+					const result = executeInvestment(investPlan, navHistory, existingRecords);
+
+					if (result.error || result.newRecords.length === 0) {
+						resolve({ success: true, newRecords: 0, newAmount: 0 });
+						return;
+					}
+
+					// 计算新增份额和金额
+					const newShares = result.newRecords.reduce((sum, r) => sum + r.shares, 0);
+					const newAmount = result.newRecords.reduce((sum, r) => sum + r.amount, 0);
+
+					// 合并到持仓
+					const holdingUpdate = mergeToHolding(fund, newShares, newAmount);
+
+					// 更新数据
+					const updatedRecords = result.allRecords;
+					const updatedPlan = { ...investPlan, lastInvestDate: result.lastInvestDate };
+
+					// 保存到本地
+					DataManager.updateInvestRecords(fund.code, updatedRecords, holdingUpdate);
+					DataManager.updateInvestPlan(fund.code, updatedPlan);
+
+					resolve({
+						success: true,
+						newRecords: result.newRecords.length,
+						newAmount: newAmount.toFixed(2)
+					});
+				} catch (e) {
+					console.error('syncSingleFund error:', e);
+					resolve({ success: false, newRecords: 0 });
+				}
+			});
+		},
+		// 关闭同步定投弹窗
+		closeBatchSyncModal() {
+			this.showBatchSyncModal = false;
 		}
 	}
 }
@@ -1484,6 +1719,153 @@ export default {
 	.example-image {
 		width: 100%;
 		border-radius: 8rpx;
+	}
+}
+
+/* 同步定投按钮样式 */
+.action-bar {
+	.invest-icon {
+		position: relative;
+
+		&.has-pending {
+			background-color: #fff7e6;
+		}
+
+		.pending-badge {
+			position: absolute;
+			top: -8rpx;
+			right: -8rpx;
+			min-width: 32rpx;
+			height: 32rpx;
+			line-height: 32rpx;
+			text-align: center;
+			background-color: #ff4d4f;
+			color: #fff;
+			font-size: 20rpx;
+			border-radius: 16rpx;
+			padding: 0 8rpx;
+		}
+	}
+}
+
+/* 同步定投弹窗样式 */
+.batch-sync-modal {
+	width: 650rpx;
+
+	.modal-body {
+		max-height: 60vh;
+		overflow-y: auto;
+	}
+}
+
+.sync-progress {
+	padding: 40rpx 20rpx;
+
+	.progress-bar {
+		height: 16rpx;
+		background-color: #f0f0f0;
+		border-radius: 8rpx;
+		overflow: hidden;
+		margin-bottom: 24rpx;
+
+		.progress-fill {
+			height: 100%;
+			background: linear-gradient(135deg, #2979ff, #4e94ff);
+			border-radius: 8rpx;
+			transition: width 0.3s ease;
+		}
+	}
+
+	.progress-text {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12rpx;
+		font-size: 28rpx;
+		color: #666;
+
+		.syncing-fund {
+			font-size: 24rpx;
+			color: #999;
+		}
+	}
+}
+
+.sync-result {
+	.result-summary {
+		display: flex;
+		justify-content: center;
+		gap: 40rpx;
+		padding: 30rpx 0;
+
+		.result-item {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+
+			.result-num {
+				font-size: 48rpx;
+				font-weight: bold;
+			}
+
+			.result-label {
+				font-size: 24rpx;
+				color: #999;
+				margin-top: 8rpx;
+			}
+
+			&.success .result-num {
+				color: #52c41a;
+			}
+
+			&.skip .result-num {
+				color: #faad14;
+			}
+
+			&.fail .result-num {
+				color: #ff4d4f;
+			}
+		}
+	}
+
+	.result-detail {
+		margin-top: 20rpx;
+		padding-top: 20rpx;
+		border-top: 1rpx solid #f0f0f0;
+
+		.detail-title {
+			font-size: 26rpx;
+			color: #666;
+			margin-bottom: 16rpx;
+		}
+
+		.detail-list {
+			max-height: 300rpx;
+			overflow-y: auto;
+
+			.detail-item {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 16rpx 0;
+				border-bottom: 1rpx solid #f5f5f5;
+
+				&:last-child {
+					border-bottom: none;
+				}
+
+				.detail-name {
+					font-size: 28rpx;
+					color: #333;
+					flex: 1;
+				}
+
+				.detail-info {
+					font-size: 24rpx;
+					color: #52c41a;
+				}
+			}
+		}
 	}
 }
 </style>
